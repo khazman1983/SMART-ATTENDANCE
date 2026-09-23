@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ms" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance - PWA AI Face Recognition, GPS & Offline</title>
+    
+    <!-- PWA Manifest & Theme Color -->
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Smart%20Attendance%20AI%22%2C%22short_name%22%3A%22SmartAttendance%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%238b5cf6%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F192x192%2F8b5cf6%2Fffffff%3Ftext%3DSA%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F512x512%2F8b5cf6%2Fffffff%3Ftext%3DSA%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- External Stylesheets & Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+        }
+        .glass-card {
+            background: rgba(30, 27, 75, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.4);
+            border-radius: 3px;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); }
+        }
+        .glow-effect {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+        @keyframes wave {
+            0%, 100% { height: 8px; }
+            50% { height: 28px; }
+        }
+        .wave-bar {
+            animation: wave 1.2s infinite ease-in-out;
+        }
+        .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body class="h-full text-slate-100 flex items-center justify-center p-0 sm:p-4 overflow-x-hidden">
+
+    <div id="app-container" class="w-full max-w-[480px] min-h-screen sm:min-h-[92vh] sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col relative border border-purple-900/40 bg-slate-950/90">
+        
+        <!-- Top Status Bar & PWA Install / Connectivity Indicator -->
+        <div class="w-full bg-slate-950/90 pt-3 pb-2 px-6 flex justify-between items-center text-xs text-slate-400 select-none border-b border-purple-950/40 z-20">
+            <span id="current-time" class="font-medium">09:41</span>
+            <div class="w-24 h-4 bg-slate-900 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full bg-slate-800 mr-2"></div>
+                <div class="w-1.5 h-1.5 rounded-full bg-purple-950"></div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <!-- PWA Install Button (Hidden until prompt available) -->
+                <button id="pwa-install-btn" onclick="installPWA()" class="hidden px-2 py-0.5 rounded text-[10px] font-bold bg-violet-600 text-white animate-pulse flex items-center space-x-1">
+                    <i class="fa-solid fa-download"></i> <span>INSTALL APP</span>
+                </button>
+                <span id="offline-badge" onclick="toggleOfflineMode()" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-pointer flex items-center space-x-1" title="Klik untuk tukar mod Online/Offline">
+                    <i class="fa-solid fa-wifi text-[9px]"></i> <span id="offline-txt">ONLINE</span>
+                </span>
+                <i class="fa-solid fa-battery-full text-[10px] text-emerald-400"></i>
+            </div>
+        </div>
+
+        <!-- Main Content Scrollable Area -->
+        <div class="flex-1 overflow-y-auto px-5 py-6 space-y-5">
+
+            <!-- Header Title -->
+            <div class="text-center space-y-1.5 pt-1">
+                <div class="inline-flex items-center justify-center w-13 h-13 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 shadow-lg shadow-indigo-500/35 text-white mb-1">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-purple-200 bg-clip-text text-transparent">
+                    SMART ATTENDANCE PWA
+                </h1>
+                <p class="text-[11px] text-purple-300/80 font-medium">Sistem Kehadiran Pintar, Pengecaman Wajah AI & GPS Geofence</p>
+            </div>
+
+            <!-- Top Action Buttons (Log Masuk & Daftar Akaun) -->
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="switchTab('login')" id="btn-tab-login" class="py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 transition-all shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-600/30">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Log Masuk</span>
+                </button>
+                <button onclick="openRegisterModal()" id="btn-tab-register" class="py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 transition-all bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-purple-500/20">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Daftar Akaun</span>
+                </button>
+            </div>
+
+            <!-- Admin Access Quick Button -->
+            <button onclick="openAdminDashboard()" class="w-full py-3 px-4 rounded-xl glass-card flex items-center justify-between text-cyan-300 hover:text-cyan-200 transition-all group border border-cyan-500/30">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-table-columns text-sm"></i>
+                    </div>
+                    <span class="text-xs font-semibold tracking-wide">Buka Dashboard Pentadbir (Admin)</span>
+                </div>
+                <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-300 tracking-wider">AKSES</span>
+            </button>
+
+            <!-- Advanced AI & Voice Attendance Panel -->
+            <div class="glass-card rounded-2xl p-4 space-y-3 glow-effect relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="relative flex h-3 w-3">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-[11px] font-bold tracking-wider text-emerald-400 uppercase">AI VOICE & FACE ACTIVE</span>
+                    </div>
+                    <button onclick="openFaceVerificationModal('Semua Kakitangan', 'Pusat Utama')" class="px-2.5 py-1 rounded-lg bg-violet-600/30 hover:bg-violet-600/50 text-[10px] font-semibold text-violet-300 border border-violet-500/30 flex items-center space-x-1 transition-all">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Imbas Wajah 3x Kelip</span>
+                    </button>
+                </div>
+
+                <!-- Voice Transcript Simulation Panel -->
+                <div class="glass-panel rounded-xl p-3 relative">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
+                            <div class="flex items-end space-x-0.5 h-3.5">
+                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
+                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
+                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
+                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-0.5 flex-1 min-w-0">
+                            <h4 class="text-xs font-semibold text-white">Sebut Je Nama Anda Terus Auto Masuk</h4>
+                            <p id="transcript-text" class="text-[10px] text-emerald-300/90 font-mono leading-relaxed truncate">
+                                "Sebut nama atau mulakan imbasan wajah AI berdekatan GPS pejabat..."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Voice Simulation Buttons -->
+                <div class="space-y-1.5 pt-0.5">
+                    <div class="flex items-center justify-between text-[10px]">
+                        <span class="text-purple-300/70 font-medium">UJI SEBUTAN PANTAS (SIMULASI SUARA):</span>
+                        <span class="text-cyan-400 font-semibold">AUTO MASUK SERTA-MERTA</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="triggerVoiceCheckIn('Faiz', 'Kejuteraan')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
+                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
+                            <span class="truncate text-slate-200">Sebut: "Faiz"</span>
+                        </button>
+                        <button onclick="triggerVoiceCheckIn('Nurul Huda', 'Pengurusan & HR')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
+                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
+                            <span class="truncate text-slate-200">Sebut: "Nurul Huda"</span>
+                        </button>
+                        <button onclick="triggerVoiceCheckIn('Tan Wei Loon', 'Operasi & Logistik')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
+                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
+                            <span class="truncate text-slate-200">Sebut: "Tan Wei Loon"</span>
+                        </button>
+                        <button onclick="triggerVoiceCheckIn('Hafiz Zulkifli', 'Pemasaran & Jualan')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
+                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
+                            <span class="truncate text-slate-200">Sebut: "Daftar Hafiz"</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GPS Location & Out-of-Office Toggle Bar -->
+            <div class="glass-card rounded-2xl p-3.5 space-y-2 border border-purple-500/20">
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2 text-cyan-300 font-medium">
+                        <i class="fa-solid fa-location-dot text-rose-400"></i>
+                        <span id="gps-status-label">GPS: Dalam Radius Pejabat (HQ - 15m)</span>
+                    </div>
+                    <button onclick="toggleLocationMode()" id="gps-mode-btn" class="px-2.5 py-1 rounded-lg bg-slate-900 text-[10px] text-purple-300 border border-purple-500/30 hover:bg-purple-950/50 transition-colors">
+                        Tugas Luar Kawasan
+                    </button>
+                </div>
+                <div id="out-of-office-note" class="hidden text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg flex items-center justify-between">
+                    <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> Mod Tugas Luar Aktif (Memerlukan Lampiran Nota)</span>
+                    <button onclick="openOutOfOfficeModal()" class="underline font-bold text-amber-200">Tambah Nota</button>
+                </div>
+            </div>
+
+            <!-- Manual Login Form -->
+            <form onsubmit="handleManualLogin(event)" class="space-y-4 glass-card rounded-2xl p-4">
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-xs">
+                        <label for="username" class="font-medium text-slate-300">ID Kakitangan / Emel / No Telefon</label>
+                        <span class="text-[10px] text-purple-400/80">Atau taip manual</span>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-regular fa-user"></i>
+                        </span>
+                        <input type="text" id="username" value="lawyer" required class="w-full pl-9 pr-3 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-xs">
+                        <label for="pin" class="font-medium text-slate-300">Kod PIN Keselamatan (4-Digit)</label>
+                        <span class="text-[10px] text-purple-400/80 font-mono">Lalai: 1234</span>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-key"></i>
+                        </span>
+                        <input type="password" id="pin" value="1234" maxlength="4" required class="w-full pl-9 pr-10 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 tracking-widest placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                        <button type="button" onclick="togglePinVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors">
+                            <i id="pin-eye-icon" class="fa-regular fa-eye-slash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all">
+                    <span>Log Masuk Secara Manual & Wajah</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </form>
+
+            <!-- Quick Staff Check-In List -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center px-1">
+                    <span class="text-xs font-semibold tracking-wider text-purple-300/80 uppercase">KAKITANGAN SEDIA ADA (AI / SEBUT NAMA)</span>
+                    <span class="text-[10px] text-emerald-400 font-medium">1-Klik Pengesahan</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- Employee 1 -->
+                    <div onclick="openFaceVerificationModal('Ahmad', 'Kejuteraan')" class="glass-card p-3 rounded-xl flex items-center space-x-3 cursor-pointer hover:bg-violet-900/20 transition-all border border-purple-500/20 group">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" alt="Ahmad" class="w-10 h-10 rounded-xl object-cover border border-purple-400/30 group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/100x100/3b82f6/ffffff?text=A'">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">Ahmad</h4>
+                            <p class="text-[11px] text-purple-300/70 truncate">Kejuteraan</p>
+                        </div>
+                        <span class="w-6 h-6 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-camera text-[10px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Employee 2 -->
+                    <div onclick="openFaceVerificationModal('Nurul', 'Pengurusan & HR')" class="glass-card p-3 rounded-xl flex items-center space-x-3 cursor-pointer hover:bg-violet-900/20 transition-all border border-purple-500/20 group">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces" alt="Nurul" class="w-10 h-10 rounded-xl object-cover border border-purple-400/30 group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/100x100/10b981/ffffff?text=N'">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">Nurul</h4>
+                            <p class="text-[11px] text-purple-300/70 truncate">Pengurusan & HR</p>
+                        </div>
+                        <span class="w-6 h-6 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-camera text-[10px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Employee 3 -->
+                    <div onclick="openFaceVerificationModal('Tan', 'Operasi & Logistik')" class="glass-card p-3 rounded-xl flex items-center space-x-3 cursor-pointer hover:bg-violet-900/20 transition-all border border-purple-500/20 group">
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=faces" alt="Tan" class="w-10 h-10 rounded-xl object-cover border border-purple-400/30 group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/100x100/f59e0b/ffffff?text=T'">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">Tan</h4>
+                            <p class="text-[11px] text-purple-300/70 truncate">Operasi & Logistik</p>
+                        </div>
+                        <span class="w-6 h-6 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-camera text-[10px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Employee 4 -->
+                    <div onclick="openFaceVerificationModal('Pravin', 'Pemasaran & Jualan')" class="glass-card p-3 rounded-xl flex items-center space-x-3 cursor-pointer hover:bg-violet-900/20 transition-all border border-purple-500/20 group">
+                        <img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100&h=100&fit=crop&crop=faces" alt="Pravin" class="w-10 h-10 rounded-xl object-cover border border-purple-400/30 group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/100x100/8b5cf6/ffffff?text=P'">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">Pravin</h4>
+                            <p class="text-[11px] text-purple-300/70 truncate">Pemasaran & Jualan</p>
+                        </div>
+                        <span class="w-6 h-6 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-camera text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support & Offline Banner -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center space-y-1">
+                <p class="text-[11px] text-slate-300">Mengalami masalah rangkaian atau telefon?</p>
+                <button onclick="triggerSupportCode()" class="text-xs font-semibold text-cyan-400 hover:underline">
+                    Guna Kod Sokongan / Pendaftaran Alternatif
+                </button>
+            </div>
+
+            <div class="pt-2 pb-6 text-center">
+                <button onclick="openAdminDashboard()" class="inline-flex items-center space-x-2 text-xs text-purple-300/70 hover:text-cyan-400 transition-colors">
+                    <i class="fa-solid fa-shield-cat"></i>
+                    <span>Akses Sebagai Pentadbir Sistem (Dashboard Admin)</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- AI Face Verification & 3x Blink Liveness Modal -->
+    <div id="face-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-sm glass-card rounded-3xl p-6 text-center space-y-4 border border-violet-500/40 shadow-2xl relative">
+            <button onclick="closeFaceModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-900/80 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="space-y-1">
+                <h3 class="text-lg font-bold text-white">Pengecaman Wajah AI</h3>
+                <p class="text-xs text-purple-300">Pengesahan Elak Gambar Statik (Liveness Check)</p>
+            </div>
+
+            <!-- Simulated Camera View with Face Oval -->
+            <div class="relative w-44 h-44 mx-auto rounded-full overflow-hidden border-2 border-violet-500/60 bg-slate-900 flex items-center justify-center shadow-inner">
+                <img id="face-preview-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop" class="w-full h-full object-cover opacity-80 filter contrast-125" alt="Face">
+                <div class="absolute inset-0 border-4 border-dashed border-emerald-400/50 rounded-full animate-spin" style="animation-duration: 10s;"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent flex flex-col items-center justify-end pb-3">
+                    <span id="blink-counter-badge" class="px-3 py-1 rounded-full bg-violet-600/90 text-[11px] font-bold text-white shadow">
+                        Kelip Mata: <span id="blink-count">0</span> / 3
+                    </span>
+                </div>
+            </div>
+
+            <div id="face-instruction" class="text-xs text-amber-300 font-medium">
+                Sila pandang kamera dan berkelip mata 3 kali untuk pengesahan...
+            </div>
+
+            <button id="btn-simulate-blink" onclick="simulateBlink()" class="w-full py-2.5 px-4 rounded-xl font-medium text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 text-white shadow-lg shadow-indigo-600/30">
+                Simulasi Kelip Mata (Klik 3x)
+            </button>
+        </div>
+    </div>
+
+    <!-- General Success / Info Modal -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div id="modal-box" class="w-full max-w-sm glass-card rounded-3xl p-6 text-center space-y-4 border border-purple-500/40 transform scale-95 transition-transform duration-300 shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-900/80 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div id="modal-icon-container" class="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto text-2xl shadow-lg shadow-emerald-500/20">
+                <i id="modal-icon" class="fa-solid fa-circle-check"></i>
+            </div>
+
+            <div class="space-y-1">
+                <h3 id="modal-title" class="text-lg font-bold text-white">Kehadiran Direkod!</h3>
+                <p id="modal-subtitle" class="text-xs text-slate-300">Pengecaman wajah dan GPS berjaya disahkan.</p>
+            </div>
+
+            <div id="modal-content" class="bg-slate-900/90 rounded-2xl p-3 text-left space-y-2 border border-slate-800 text-xs text-slate-300">
+                <!-- Dynamic Content -->
+            </div>
+
+            <button onclick="closeModal()" class="w-full py-2.5 px-4 rounded-xl font-medium text-sm bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-600/30">
+                Teruskan
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 hidden opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-3xl max-h-[92vh] glass-card rounded-3xl flex flex-col overflow-hidden border border-cyan-500/40 shadow-2xl relative">
+            <!-- Header -->
+            <div class="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Laman Web Pentadbir (Dashboard Admin)</h3>
+                        <p class="text-[11px] text-cyan-300/80">Pantauan Masa Nyata, GPS, Wajah & Laporan Kehadiran</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="exportAdminReport()" class="px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 rounded-lg text-xs font-semibold border border-cyan-500/30 flex items-center space-x-1">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Export Laporan</span>
+                    </button>
+                    <button onclick="closeAdminDashboard()" class="text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 font-medium">Jumlah Hadir</span>
+                        <h4 class="text-xl font-bold text-emerald-400 mt-1">42 / 48</h4>
+                        <span class="text-[10px] text-emerald-400/80"><i class="fa-solid fa-arrow-up"></i> 87.5%</span>
+                    </div>
+                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 font-medium">Wajah AI & Suara</span>
+                        <h4 class="text-xl font-bold text-indigo-400 mt-1">38 org</h4>
+                        <span class="text-[10px] text-indigo-400/80">Biometrik Sah</span>
+                    </div>
+                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 font-medium">Tugas Luar HQ</span>
+                        <h4 class="text-xl font-bold text-amber-400 mt-1">4 org</h4>
+                        <span class="text-[10px] text-amber-400/80">GPS Terkawal</span>
+                    </div>
+                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 font-medium">Mod Offline Sync</span>
+                        <h4 id="offline-queue-count" class="text-xl font-bold text-cyan-400 mt-1">0 rekod</h4>
+                        <span class="text-[10px] text-cyan-400/80">Auto-Synced</span>
+                    </div>
+                </div>
+
+                <!-- Live Log Table -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Log Kehadiran Masa Nyata (Real-Time)</h4>
+                        <span class="text-[10px] text-purple-300">Kemas kini automatik</span>
+                    </div>
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/90 text-slate-400 font-medium border-b border-slate-800">
+                                    <tr>
+                                        <th class="p-3">Nama</th>
+                                        <th class="p-3">Jabatan</th>
+                                        <th class="p-3">Masa</th>
+                                        <th class="p-3">Lokasi / GPS</th>
+                                        <th class="p-3">Kaedah</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-log-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+                                    <tr>
+                                        <td class="p-3 font-semibold text-white">Faiz Iskandar</td>
+                                        <td class="p-3 text-purple-300">Kejuteraan</td>
+                                        <td class="p-3 text-emerald-400">08:52 AM</td>
+                                        <td class="p-3 text-slate-300">HQ (Radius 12m)</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-medium">AI Wajah & Suara</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold text-white">Nurul Huda</td>
+                                        <td class="p-3 text-purple-300">Pengurusan & HR</td>
+                                        <td class="p-3 text-emerald-400">08:45 AM</td>
+                                        <td class="p-3 text-slate-300">HQ (Radius 8m)</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-medium">AI Wajah 3x Kelip</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold text-white">Tan Wei Loon</td>
+                                        <td class="p-3 text-purple-300">Operasi & Logistik</td>
+                                        <td class="p-3 text-emerald-400">08:30 AM</td>
+                                        <td class="p-3 text-amber-300">Tugas Luar (Tapak Projek A)</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-medium">GPS Luar Kawasan</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold text-white">Ahmad Zaki</td>
+                                        <td class="p-3 text-purple-300">Pemasaran</td>
+                                        <td class="p-3 text-violet-400">08:15 AM</td>
+                                        <td class="p-3 text-slate-300">HQ (Radius 5m)</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-medium">Manual PIN</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 bg-slate-900/90 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                <span>Sistem Dilindungi EnKRIPSI AES-256 & PWA Service Worker</span>
+                <button onclick="closeAdminDashboard()" class="py-2 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold">
+                    Tutup Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Out of Office Note Modal -->
+    <div id="ooo-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-sm glass-card rounded-3xl p-6 space-y-4 border border-amber-500/40 shadow-2xl relative">
+            <h3 class="text-sm font-bold text-white">Nota Tugasan Luar Kawasan</h3>
+            <p class="text-xs text-slate-300">Sila nyatakan sebab dan lokasi tugasan rasmi di luar pejabat:</p>
+            <textarea id="ooo-reason" rows="3" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" placeholder="Contoh: Lawatan tapak projek di Johor Bahru..."></textarea>
+            <div class="flex space-x-2">
+                <button onclick="saveOutOfOfficeNote()" class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs">Simpan & Hantar GPS</button>
+                <button onclick="closeOutOfOfficeModal()" class="py-2.5 px-4 rounded-xl bg-slate-800 text-slate-300 text-xs">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Account Modal -->
+    <div id="register-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-sm glass-card rounded-3xl p-6 space-y-4 border border-purple-500/40 shadow-2xl relative">
+            <h3 class="text-sm font-bold text-white">Pendaftaran Akaun Pintar PWA</h3>
+            <p class="text-xs text-slate-300">Daftar biometrik wajah dan suara untuk akaun peribadi anda.</p>
+            <div class="space-y-3">
+                <input type="text" id="reg-name" placeholder="Nama Penuh Kakitangan" class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white">
+                <input type="text" id="reg-dept" placeholder="Jabatan / Bahagian" class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white">
+                <input type="password" id="reg-pin" placeholder="Cipta PIN 4-Digit" maxlength="4" class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white">
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="submitRegistration()" class="flex-1 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs">Daftar Akaun</button>
+                <button onclick="closeRegisterModal()" class="py-2.5 px-4 rounded-xl bg-slate-800 text-slate-300 text-xs">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'smart-attendance-v1';
+                    const urlsToCache = ['.', './index.html'];
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+                        );
+                    });
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request).then(response => response || fetch(event.request))
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('PWA Service Worker registered successfully.'))
+                    .catch(err => console.log('SW registration failed: ', err));
+            });
+        }
+
+        // PWA Install Prompt Handler
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwa-install-btn').classList.remove('hidden');
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the PWA install prompt');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('pwa-install-btn').classList.add('hidden');
+                });
+            }
+        }
+
+        // Global App State
+        let isOffline = false;
+        let isOutOfOffice = false;
+        let blinkCount = 0;
+        let currentTargetName = "Faiz Iskandar";
+        let currentTargetDept = "Kejuteraan";
+        let offlineQueue = [];
+
+        // Update Live Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('current-time').innerText = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Toggle Offline / Online Mode Simulation
+        function toggleOfflineMode() {
+            isOffline = !isOffline;
+            const badge = document.getElementById('offline-badge');
+            const txt = document.getElementById('offline-txt');
+            if (isOffline) {
+                badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 cursor-pointer flex items-center space-x-1";
+                txt.innerText = "OFFLINE (MOD SIMPANAN)";
+                showNotification("Mod Offline PWA Diaktifkan. Rekod akan disimpan selamat secara tempatan.");
+            } else {
+                badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-pointer flex items-center space-x-1";
+                txt.innerText = "ONLINE";
+                syncOfflineQueue();
+            }
+        }
+
+        // Sync Offline Records
+        function syncOfflineQueue() {
+            if (offlineQueue.length > 0) {
+                showNotification(`Menyegerakkan ${offlineQueue.length} rekod offline ke pelayan pusat... Berjaya!`);
+                offlineQueue = [];
+                document.getElementById('offline-queue-count').innerText = "0 rekod";
+            } else {
+                showNotification("Sambungan Online pulih. Semua rekod telah disegerakkan.");
+            }
+        }
+
+        // Toggle Location (HQ vs Out of Office)
+        function toggleLocationMode() {
+            isOutOfOffice = !isOutOfOffice;
+            const label = document.getElementById('gps-status-label');
+            const btn = document.getElementById('gps-mode-btn');
+            const note = document.getElementById('out-of-office-note');
+            if (isOutOfOffice) {
+                label.innerHTML = '<i class="fa-solid fa-location-arrow text-amber-400"></i> GPS: Tugas Luar Kawasan (Terkawal)';
+                label.className = "flex items-center space-x-2 text-amber-300 font-medium";
+                btn.innerText = "Kembali ke HQ";
+                note.classList.remove('hidden');
+            } else {
+                label.innerHTML = '<i class="fa-solid fa-location-dot text-rose-400"></i> GPS: Dalam Radius Pejabat (HQ - 15m)';
+                label.className = "flex items-center space-x-2 text-cyan-300 font-medium";
+                btn.innerText = "Tugas Luar Kawasan";
+                note.classList.add('hidden');
+            }
+        }
+
+        // Toggle PIN Visibility
+        function togglePinVisibility() {
+            const pinInput = document.getElementById('pin');
+            const eyeIcon = document.getElementById('pin-eye-icon');
+            if (pinInput.type === 'password') {
+                pinInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            } else {
+                pinInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            }
+        }
+
+        // Switch Active Tabs
+        function switchTab(tabName) {
+            const btnLogin = document.getElementById('btn-tab-login');
+            const btnRegister = document.getElementById('btn-tab-register');
+            if(tabName === 'login') {
+                btnLogin.className = "py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 transition-all shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-600/30";
+                btnRegister.className = "py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 transition-all bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-purple-500/20";
+            }
+        }
+
+        // Face Verification Modal & 3x Blink Liveness Simulation
+        function openFaceVerificationModal(name, dept) {
+            currentTargetName = name;
+            currentTargetDept = dept;
+            blinkCount = 0;
+            document.getElementById('blink-count').innerText = blinkCount;
+            document.getElementById('face-instruction').innerText = "Sila pandang kamera dan berkelip mata 3 kali untuk pengesahan...";
+            
+            const modal = document.getElementById('face-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeFaceModal() {
+            const modal = document.getElementById('face-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function simulateBlink() {
+            blinkCount++;
+            document.getElementById('blink-count').innerText = blinkCount;
+            if (blinkCount >= 3) {
+                document.getElementById('face-instruction').innerText = "Pengesahan Wajah & Liveness Berjaya! Merekod kehadiran...";
+                setTimeout(() => {
+                    closeFaceModal();
+                    finalizeCheckIn(currentTargetName, currentTargetDept, "AI Wajah (3x Kelip)");
+                }, 600);
+            } else {
+                document.getElementById('face-instruction').innerText = `Kelip ke-${blinkCount} dikesan. Sila kelip ${3 - blinkCount} kali lagi.`;
+            }
+        }
+
+        // Trigger Voice Check-In (Hands-Free Simulation)
+        function triggerVoiceCheckIn(name, department) {
+            openFaceVerificationModal(name, department);
+            document.getElementById('transcript-text').innerText = `"[Suara Dikesan] 'Saya ${name} hadir' - Sila sahkan kelip mata 3x"`;
+        }
+
+        // Finalize Check-In & Handle Offline Queue if offline
+        function finalizeCheckIn(name, department, method) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const locationInfo = isOutOfOffice ? "Tugas Luar (GPS Terkawal)" : "HQ (Radius 12m)";
+
+            if (isOffline) {
+                offlineQueue.push({ name, department, timeStr, method, locationInfo });
+                document.getElementById('offline-queue-count').innerText = `${offlineQueue.length} rekod`;
+                showModal(
+                    "Disimpan Dalam Mod Offline PWA!",
+                    `Sambungan internet terputus. Rekod ${name} disimpan selamat secara tempatan.`,
+                    `
+                        <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Nama:</span><span class="font-bold text-white">${name}</span></div>
+                        <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Masa:</span><span class="font-medium text-amber-400">${timeStr}</span></div>
+                        <div class="flex justify-between py-1"><span class="text-slate-400">Status:</span><span class="font-medium text-cyan-400">Menunggu Sync Online</span></div>
+                    `,
+                    "success"
+                );
+                return;
+            }
+
+            showModal(
+                "Kehadiran Berjaya Direkod!",
+                `Pengecaman wajah AI & GPS mengesahkan kehadiran ${name}.`,
+                `
+                    <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Nama:</span><span class="font-bold text-white">${name}</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Jabatan:</span><span class="font-medium text-purple-300">${department}</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Masa Masuk:</span><span class="font-medium text-emerald-400">${timeStr}</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">GPS & Lokasi:</span><span class="font-medium text-amber-300">${locationInfo}</span></div>
+                    <div class="flex justify-between py-1"><span class="text-slate-400">Kaedah:</span><span class="font-medium text-cyan-400">${method}</span></div>
+                `,
+                "success"
+            );
+
+            // Add to admin table dynamically
+            const tbody = document.getElementById('admin-log-tbody');
+            if(tbody) {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td class="p-3 font-semibold text-white">${name}</td>
+                    <td class="p-3 text-purple-300">${department}</td>
+                    <td class="p-3 text-emerald-400">${timeStr}</td>
+                    <td class="p-3 text-${isOutOfOffice ? 'amber-300' : 'slate-300'}">${locationInfo}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-medium">${method}</span></td>
+                `;
+                tbody.insertBefore(newRow, tbody.firstChild);
+            }
+        }
+
+        // Manual Login Form Handler
+        function handleManualLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            openFaceVerificationModal(username, "Kakitangan Berdaftar");
+        }
+
+        // Out of Office Modals
+        function openOutOfOfficeModal() {
+            document.getElementById('ooo-modal').classList.remove('hidden');
+        }
+        function closeOutOfOfficeModal() {
+            document.getElementById('ooo-modal').classList.add('hidden');
+        }
+        function saveOutOfOfficeNote() {
+            const reason = document.getElementById('ooo-reason').value;
+            if(!reason) { 
+                showNotification("Sila masukkan nota tugasan."); 
+                return; 
+            }
+            closeOutOfOfficeModal();
+            showNotification("Nota tugas luar berjaya dilampirkan bersama koordinat GPS.");
+        }
+
+        // Register Modals
+        function openRegisterModal() {
+            document.getElementById('register-modal').classList.remove('hidden');
+        }
+        function closeRegisterModal() {
+            document.getElementById('register-modal').classList.add('hidden');
+        }
+        function submitRegistration() {
+            const name = document.getElementById('reg-name').value;
+            if(!name) { 
+                showNotification("Sila masukkan nama penuh."); 
+                return; 
+            }
+            closeRegisterModal();
+            showNotification(`Akaun ${name} berjaya didaftarkan dengan pengecaman wajah & suara AI!`);
+        }
+
+        // General Notification Toast
+        function showNotification(msg) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 border border-violet-500 text-slate-100 text-xs px-4 py-3 rounded-2xl shadow-2xl z-50 flex items-center space-x-2 animate-bounce";
+            toast.innerHTML = `<i class="fa-solid fa-bell text-violet-400"></i><span>${msg}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Modal Controls
+        function showModal(title, subtitle, htmlContent, type = "success") {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-subtitle').innerText = subtitle;
+            document.getElementById('modal-content').innerHTML = htmlContent;
+            
+            const backdrop = document.getElementById('modal-backdrop');
+            const box = document.getElementById('modal-box');
+            backdrop.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const backdrop = document.getElementById('modal-backdrop');
+            const box = document.getElementById('modal-box');
+            backdrop.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        // Admin Dashboard Controls
+        function openAdminDashboard() {
+            const modal = document.getElementById('admin-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeAdminDashboard() {
+            const modal = document.getElementById('admin-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function exportAdminReport() {
+            showNotification("Laporan kehadiran rasmi PWA berjaya dieksport dalam format Excel/PDF.");
+        }
+
+        function triggerSupportCode() {
+            showNotification("Kod sokongan sementara PWA: #SAT-9921-ALT dijana. Sila berikan kepada penyelia.");
+        }
+    </script>
+</body>
+</html>
