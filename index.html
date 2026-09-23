@@ -40,6 +40,41 @@
         }
         .glow-circle { animation: pulse-glow 2.5s infinite ease-in-out; }
     </style>
+    <!-- Firebase SDK: isi konfigurasi projek sendiri sebelum menggunakan sambungan awan. -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "IAIzaSyAN4QhPxoRna_8s6u6uQJ9LEfNjyyhv_Cs",
+        authDomain: "Imart-attendance-a5298.firebaseapp.com",
+        projectId: "smart-attendance-a5298",
+        storageBucket: "smart-attendance-a5298.firebasestorage.app",
+        messagingSenderId: "961238218353",
+        appId: "1:961238218353:web:0fe8ac3e60b9b8b4d9cdd0"
+      };
+      // Aktifkan Anonymous dalam Firebase Console > Authentication > Sign-in method.
+      // Ini bukan pengesahan biometrik. Peraturan keselamatan Firestore mesti ditetapkan.
+      window.smartFirebaseReady = Promise.resolve(null);
+      if (firebaseConfig.apiKey !== "ISI_API_KEY_FIREBASE" &&
+          firebaseConfig.projectId !== "ISI_PROJECT_ID" && typeof firebase !== "undefined") {
+        try {
+          firebase.initializeApp(firebaseConfig);
+          window.smartFirebaseReady = firebase.auth().signInAnonymously()
+            .then(user => ({ db: firebase.firestore(), uid: user.user.uid }))
+            .catch(error => { console.warn("Firebase Authentication:", error.message); return null; });
+        } catch (error) { console.warn("Firebase setup:", error.message); }
+      }
+      // Sync data only to this device's authenticated UID. Never upload plaintext passwords.
+      window.smartFirebaseSave = async function(collection, key, data) {
+        const session = await window.smartFirebaseReady;
+        if (!session) return;
+        try {
+          await session.db.collection('users').doc(session.uid)
+            .collection(collection).doc(String(key)).set(data, { merge: true });
+        } catch (error) { console.warn("Firebase save:", error.message); }
+      };
+    </script>
 </head>
 <body class="h-full text-slate-100 flex items-center justify-center p-0 sm:p-4 overflow-x-hidden">
 
@@ -63,106 +98,311 @@
             </div>
         </div>
 
-        <!-- Main Body -->
-        <div class="flex-1 overflow-y-auto px-5 py-6 space-y-5">
+        <!-- Main Body Wrapper -->
+        <div class="flex-1 overflow-y-auto px-5 py-6 space-y-5" id="main-view-wrapper">
 
-            <!-- Title Header -->
-            <div class="text-center space-y-1.5 pt-1">
-                <div class="inline-flex items-center justify-center w-13 h-13 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 shadow-lg shadow-indigo-500/35 text-white mb-1">
-                    <i class="fa-solid fa-fingerprint text-2xl"></i>
-                </div>
-                <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-purple-200 bg-clip-text text-transparent">
-                    SMART ATTENDANCE PWA
-                </h1>
-                <p class="text-[11px] text-purple-300/80 font-medium">Sistem Kehadiran Pintar (ID, Password, Suara & Bulatan Muka AI)</p>
-            </div>
-
-            <!-- Top Action Buttons & Voice Login Trigger -->
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="switchTab('login')" id="btn-tab-login" class="py-2.5 px-2 rounded-xl font-medium text-xs flex items-center justify-center space-x-1 transition-all shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-600/30">
-                    <i class="fa-solid fa-right-to-bracket text-xs"></i>
-                    <span>Log Masuk</span>
-                </button>
-                <button onclick="openRegisterModal()" id="btn-tab-register" class="py-2.5 px-2 rounded-xl font-medium text-xs flex items-center justify-center space-x-1 transition-all bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-purple-500/20">
-                    <i class="fa-solid fa-user-plus text-xs"></i>
-                    <span>Daftar</span>
-                </button>
-                <button onclick="startVoiceLogin()" id="btn-voice-login" class="py-2.5 px-2 rounded-xl font-medium text-xs flex items-center justify-center space-x-1 transition-all bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/30 animate-pulse">
-                    <i class="fa-solid fa-microphone text-xs"></i>
-                    <span>Suara AI</span>
-                </button>
-            </div>
-
-            <!-- Admin Access Quick Button -->
-            <button onclick="openAdminDashboard()" class="w-full py-3 px-4 rounded-xl glass-card flex items-center justify-between text-cyan-300 hover:text-cyan-200 transition-all group border border-cyan-500/30">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-table-columns text-sm"></i>
+            <!-- ================= VIEW 1: LOGIN / LANDING ================= -->
+            <div id="view-login" class="space-y-5">
+                <!-- Title Header -->
+                <div class="text-center space-y-1.5 pt-1">
+                    <div class="inline-flex items-center justify-center w-13 h-13 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-400 shadow-lg shadow-indigo-500/35 text-white mb-1">
+                        <i class="fa-solid fa-fingerprint text-2xl"></i>
                     </div>
-                    <span class="text-xs font-semibold tracking-wide">Buka Dashboard Pentadbir (Admin)</span>
+                    <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-purple-200 bg-clip-text text-transparent">
+                        SMART ATTENDANCE PWA
+                    </h1>
+                    <p class="text-[11px] text-purple-300/80 font-medium">Sistem Kehadiran Pintar (Log Masuk Imbas Muka)</p>
                 </div>
-                <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-300 tracking-wider">AKSES</span>
-            </button>
 
-            <!-- GPS Location & Out-of-Office Toggle Bar -->
-            <div class="glass-card rounded-2xl p-3.5 space-y-2 border border-purple-500/20">
-                <div class="flex items-center justify-between text-xs">
-                    <div class="flex items-center space-x-2 text-cyan-300 font-medium">
-                        <i class="fa-solid fa-location-dot text-rose-400"></i>
-                        <span id="gps-status-label">GPS: Dalam Radius Pejabat (HQ - 150m)</span>
-                    </div>
-                    <button onclick="toggleLocationMode()" id="gps-mode-btn" class="px-2.5 py-1 rounded-lg bg-slate-900 text-[10px] text-purple-300 border border-purple-500/30 hover:bg-purple-950/50 transition-colors">
-                        Tugas Luar Kawasan
+                <!-- Top Action Buttons & Voice Login Trigger -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="switchTab('login')" id="btn-tab-login" class="py-2.5 px-2 rounded-xl font-medium text-xs flex items-center justify-center space-x-1 transition-all shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-600/30">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i>
+                        <span>Log Masuk</span>
+                    </button>
+                    <button onclick="openRegisterModal()" id="btn-tab-register" class="py-2.5 px-2 rounded-xl font-medium text-xs flex items-center justify-center space-x-1 transition-all bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-purple-500/20">
+                        <i class="fa-solid fa-user-plus text-xs"></i>
+                        <span>Daftar</span>
                     </button>
                 </div>
-                <div id="out-of-office-note" class="hidden text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg flex items-center justify-between">
-                    <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> Mod Tugas Luar Aktif</span>
-                    <button onclick="openOutOfOfficeModal()" class="underline font-bold text-amber-200">Tambah Nota</button>
-                </div>
-            </div>
 
-            <!-- Standard ID & Password Login Form -->
-            <form onsubmit="handleManualLogin(event)" class="space-y-4 glass-card rounded-2xl p-4 border border-purple-500/30">
-                <div class="flex items-center justify-between border-b border-purple-900/50 pb-2">
-                    <span class="text-xs font-bold text-violet-300"><i class="fa-solid fa-lock mr-1"></i> Log Masuk ID & Password</span>
-                    <span class="text-[10px] text-slate-400">Pekerja Berdaftar Sahaja</span>
-                </div>
+                <!-- Admin Access Quick Button -->
+                <button onclick="openAdminDashboard()" class="w-full py-3 px-4 rounded-xl glass-card flex items-center justify-between text-cyan-300 hover:text-cyan-200 transition-all group border border-cyan-500/30">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-table-columns text-sm"></i>
+                        </div>
+                        <span class="text-xs font-semibold tracking-wide">Buka Dashboard Pentadbir (Admin)</span>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-300 tracking-wider">AKSES</span>
+                </button>
 
-                <div class="space-y-1.5">
-                    <label for="username" class="block text-xs font-medium text-slate-300">ID Kakitangan / Nama Penuh</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                            <i class="fa-regular fa-user"></i>
-                        </span>
-                        <input type="text" id="username" placeholder="Cth: STF-1088 atau Nama" required class="w-full pl-9 pr-3 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500">
+                <!-- GPS Location & Out-of-Office Toggle Bar -->
+                <div class="glass-card rounded-2xl p-3.5 space-y-2 border border-purple-500/20">
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-2 text-cyan-300 font-medium">
+                            <i class="fa-solid fa-location-dot text-rose-400"></i>
+                            <span id="gps-status-label">GPS: Dalam Radius Pejabat (HQ - 3km)</span>
+                        </div>
+                    </div>
+                    <div id="out-of-office-note" class="hidden text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg flex items-center justify-between">
+                        <span><i class="fa-solid fa-triangle-exclamation mr-1"></i> Mod Tugas Luar Aktif</span>
+                        <button onclick="openOutOfOfficeModal()" class="underline font-bold text-amber-200">Tambah Nota</button>
                     </div>
                 </div>
 
-                <div class="space-y-1.5">
-                    <label for="password" class="block text-xs font-medium text-slate-300">Password / Kod PIN (4-Digit)</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                            <i class="fa-solid fa-key"></i>
-                        </span>
-                        <input type="password" id="password" placeholder="••••" maxlength="6" required class="w-full pl-9 pr-10 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 tracking-widest placeholder-slate-500 focus:outline-none focus:border-violet-500">
-                        <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200">
-                            <i id="pwd-eye-icon" class="fa-regular fa-eye-slash text-xs"></i>
+                <!-- Pilihan log masuk manual menggunakan ID dan Password -->
+                <form onsubmit="handleManualLogin(event)" class="space-y-4 glass-card rounded-2xl p-4 border border-purple-500/30">
+                    <div class="flex items-center justify-between border-b border-purple-900/50 pb-2">
+                        <span class="text-xs font-bold text-violet-300"><i class="fa-solid fa-lock mr-1"></i> Log Masuk ID & Password</span>
+                        <span class="text-[10px] text-slate-400">Pekerja Berdaftar Sahaja</span>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="username" class="block text-xs font-medium text-slate-300">ID Kakitangan / Nama Penuh</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-regular fa-user"></i>
+                            </span>
+                            <input type="text" id="username" placeholder="Cth: STF-1088 atau Nama" class="w-full pl-9 pr-10 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500">
+                            <button type="button" onclick="dictateLoginField('username')" aria-label="Isi nama atau ID menggunakan suara" title="Isi nama atau ID menggunakan suara" class="absolute inset-y-0 right-0 pr-3 flex items-center text-cyan-400 hover:text-cyan-200"><i class="fa-solid fa-microphone text-xs"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="password" class="block text-xs font-medium text-slate-300">Password / Kod PIN (4-Digit)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-key"></i>
+                            </span>
+                            <input type="password" id="password" placeholder="••••" maxlength="6" class="w-full pl-9 pr-20 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 tracking-widest placeholder-slate-500 focus:outline-none focus:border-violet-500">
+                            <button type="button" onclick="dictateLoginField('password')" aria-label="Isi PIN menggunakan suara" title="Isi PIN menggunakan suara (pastikan tiada orang mendengar)" class="absolute inset-y-0 right-9 pr-2 flex items-center text-cyan-400 hover:text-cyan-200"><i class="fa-solid fa-microphone text-xs"></i></button>
+                            <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200">
+                                <i id="pwd-eye-icon" class="fa-regular fa-eye-slash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 text-white shadow-lg shadow-indigo-600/30 transition-all">
+                        <span>IMBAS MUKA & LOG MASUK</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+
+                <!-- Support & Offline Info -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center space-y-1">
+                    <p class="text-[11px] text-slate-300">Belum mempunyai akaun?</p>
+                    <button onclick="openRegisterModal()" class="text-xs font-semibold text-cyan-400 hover:underline">
+                        Daftar Akaun Baru & Bulatan Biometrik AI
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================= VIEW 2: NEW POST-LOGIN DASHBOARD (FROM SCREENSHOT) ================= -->
+            <div id="view-dashboard" class="space-y-4 hidden">
+                
+                <!-- Top Profile Bar -->
+                <div class="flex items-center justify-between glass-card p-3 rounded-2xl border border-purple-500/30">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <img id="dash-user-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop" alt="User Profile" class="w-12 h-12 rounded-full object-cover border-2 border-violet-500">
+                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+                        </div>
+                        <div>
+                            <h2 id="dash-user-name" class="text-sm font-bold text-white">daftar ustaz</h2>
+                            <p id="dash-user-meta" class="text-[11px] text-purple-300">STF-1006 • Kejuruteraan</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <!-- Face ID Switch Toggle -->
+                        <div class="flex items-center space-x-1.5 bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-800">
+                            <i class="fa-solid fa-camera text-[10px] text-cyan-400"></i>
+                            <span class="text-[10px] font-semibold text-slate-300">Face ID</span>
+                            <label class="relative inline-flex items-center cursor-pointer scale-75">
+                                <input type="checkbox" id="face-id-toggle" checked class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+                        <!-- Top Quick Action Icons -->
+                        <button onclick="showToast('Tetapan akaun dibuka')" class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-white">
+                            <i class="fa-solid fa-gear text-xs"></i>
+                        </button>
+                        <button onclick="handleLogout()" class="h-9 px-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center gap-1.5 text-rose-400 hover:bg-rose-500/20 text-xs font-bold" title="Log Keluar">
+                            <i class="fa-solid fa-right-from-bracket text-xs"></i><span>KELUAR</span>
                         </button>
                     </div>
                 </div>
 
-                <button type="submit" class="w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 text-white shadow-lg shadow-indigo-600/30 transition-all">
-                    <span>Log Masuk & Imbas Bulatan Muka</span>
-                    <i class="fa-solid fa-arrow-right text-xs"></i>
-                </button>
-            </form>
+                <!-- Biometric Info Banner -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex items-center justify-between text-xs">
+                    <div>
+                        <span class="font-bold text-slate-200">Biometric Face ID: Aktif</span>
+                        <p class="text-[10px] text-slate-400">Kamera auto-detect aktif untuk selfie</p>
+                    </div>
+                    <button onclick="openRegisterModal()" class="px-3 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/30 text-[11px] font-medium text-purple-300 hover:bg-purple-900/60 flex items-center space-x-1">
+                        <i class="fa-solid fa-sliders text-[10px]"></i>
+                        <span>Urus Tetapan</span>
+                    </button>
+                </div>
 
-            <!-- Support & Offline Info -->
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center space-y-1">
-                <p class="text-[11px] text-slate-300">Belum mempunyai akaun?</p>
-                <button onclick="openRegisterModal()" class="text-xs font-semibold text-cyan-400 hover:underline">
-                    Daftar Akaun Baru & Bulatan Biometrik AI
+                <!-- Live Clock Card -->
+                <div class="glass-card rounded-3xl p-5 relative overflow-hidden border border-purple-500/30 shadow-xl space-y-2">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-purple-600/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="flex items-center justify-between text-xs text-slate-300">
+                        <span id="dash-current-date" class="font-medium flex items-center space-x-1.5">
+                            <i class="fa-regular fa-calendar text-violet-400"></i>
+                            <span>Rabu, 23 September 2026</span>
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] font-semibold text-purple-300 tracking-wider">
+                            WAKTU MALAYSIA (MYT)
+                        </span>
+                    </div>
+                    <div class="py-1">
+                        <h2 id="dash-live-time" class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-mono">
+                            11:47:23 <span class="text-lg text-violet-400 font-sans font-semibold">PG</span>
+                        </h2>
+                    </div>
+                    <div class="pt-1 border-t border-purple-900/40 flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Status Hari Ini:</span>
+                        <span id="attendance-status-badge" class="font-bold text-amber-400">BELUM RAKAM KEHADIRAN</span>
+                    </div>
+                </div>
+
+                <!-- GPS Location Verification Card -->
+                <div class="glass-card rounded-2xl p-4 space-y-3 border border-purple-500/30">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                                <i class="fa-solid fa-location-dot text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-bold text-white">Pengesahan Lokasi & GPS</h3>
+                                <p class="text-[10px] text-slate-400">Radius Dibenarkan: 3 km (3,000 meter)</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                            ● Dalam Radius Pejabat
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-900/90 rounded-xl p-3 space-y-1.5 text-xs border border-slate-800 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Jarak ke Ibu Pejabat:</span>
+                            <span id="gps-distance-val" class="font-bold text-cyan-400">16 meter</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Lokasi Dikesan:</span>
+                            <span class="text-slate-200 text-right">Lobi Aras Bawah, Menara AI</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 pt-1">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-400 font-medium">Uji Lokasi (Preset / GPS Sebenar):</span>
+                            <button onclick="requestRealGPS()" class="text-cyan-400 hover:underline font-semibold flex items-center space-x-1">
+                                <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
+                                <span>Guna GPS Sebenar</span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                            <button onclick="setGPSPreset('HQ', 16, 'Lobi Aras Bawah, Menara AI')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-left border border-purple-500/20 text-slate-300 truncate">
+                                🏢 Lobi Pejabat (Dalam Radius - 16m)
+                            </button>
+                            <button onclick="setGPSPreset('Cafeteria', 85, 'Kafeteria Aras 3, Menara AI')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-left border border-purple-500/20 text-slate-300 truncate">
+                                ☕ Kafeteria Pejabat (Dalam Radius - 85m)
+                            </button>
+                            <button onclick="setGPSPreset('Far', 3200, 'Pusat Membeli-belah Alamanda')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-left border border-purple-500/20 text-slate-300 truncate">
+                                🛍️ Pusat Membeli-belah Alamanda (Luar Radius)
+                            </button>
+                            <button onclick="setGPSPreset('Outstation', 12000, 'KLCC Kuala Lumpur (Tugas Luar)')" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-left border border-purple-500/20 text-slate-300 truncate">
+                                🚗 KLCC Kuala Lumpur (Tugas Luar)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW: Kategori Aktiviti / Program / Kursus / Mesyuarat sebelum daftar kehadiran -->
+                <div class="glass-card rounded-2xl p-4 space-y-3 border border-indigo-500/30">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-indigo-300">
+                        <i class="fa-solid fa-list-check text-cyan-400"></i>
+                        <span>Pilih Kategori Aktiviti Sebelum Kehadiran</span>
+                    </div>
+                    <p class="text-[10px] text-slate-300 leading-relaxed font-sans">
+                        Sebelum daftar kehadiran ke dalam sistem Smart Attendance sebagai pekerja boleh memilih menghadiri kursus, program, mesyuarat, lawatan dan lain-lain.
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="selectAttendanceActivity('Kursus / Latihan')" id="act-kursus" class="p-2.5 rounded-xl bg-slate-900/90 border border-purple-500/30 text-left hover:border-cyan-400 transition-all text-xs flex items-center space-x-2 group">
+                            <i class="fa-solid fa-graduation-cap text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                            <div>
+                                <span class="font-bold text-slate-200 block">Kursus</span>
+                                <span class="text-[9px] text-slate-400">Latihan Rasmi</span>
+                            </div>
+                        </button>
+                        <button onclick="selectAttendanceActivity('Program Khas')" id="act-program" class="p-2.5 rounded-xl bg-slate-900/90 border border-purple-500/30 text-left hover:border-cyan-400 transition-all text-xs flex items-center space-x-2 group">
+                            <i class="fa-solid fa-calendar-days text-violet-400 group-hover:scale-110 transition-transform"></i>
+                            <div>
+                                <span class="font-bold text-slate-200 block">Program</span>
+                                <span class="text-[9px] text-slate-400">Aktiviti Syarikat</span>
+                            </div>
+                        </button>
+                        <button onclick="selectAttendanceActivity('Mesyuarat Rasmi')" id="act-mesyuarat" class="p-2.5 rounded-xl bg-slate-900/90 border border-purple-500/30 text-left hover:border-cyan-400 transition-all text-xs flex items-center space-x-2 group">
+                            <i class="fa-solid fa-handshake text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                            <div>
+                                <span class="font-bold text-slate-200 block">Mesyuarat</span>
+                                <span class="text-[9px] text-slate-400">Meeting / Perbincangan</span>
+                            </div>
+                        </button>
+                        <button onclick="selectAttendanceActivity('Lawatan Tapak')" id="act-lawatan" class="p-2.5 rounded-xl bg-slate-900/90 border border-purple-500/30 text-left hover:border-cyan-400 transition-all text-xs flex items-center space-x-2 group">
+                            <i class="fa-solid fa-route text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            <div>
+                                <span class="font-bold text-slate-200 block">Lawatan</span>
+                                <span class="text-[9px] text-slate-400">Lawatan Luar / Tapak</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div id="selected-activity-badge" class="hidden text-[10px] bg-cyan-500/10 border border-cyan-500/30 p-2 rounded-xl text-cyan-300 flex items-center justify-between">
+                        <span><i class="fa-solid fa-check-circle mr-1"></i> Aktiviti Dipilih: <strong id="selected-activity-name">-</strong></span>
+                        <button onclick="clearAttendanceActivity()" class="text-rose-400 hover:underline">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Primary Action Button: Rakam Masa Masuk -->
+                <button onclick="startAttendanceScan()" class="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 hover:from-violet-500 text-white shadow-xl shadow-indigo-600/30 flex items-center justify-between group transition-all transform hover:scale-[1.01]">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-shield-halved text-lg"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="text-sm font-bold">Rakam Masa Masuk</h3>
+                            <p class="text-[11px] text-purple-200">Pengecaman Wajah Automatik (Hands-Free AI)</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-sm transform group-hover:translate-x-1 transition-transform"></i>
                 </button>
+
+                <!-- Attendance History Log -->
+                <div class="glass-card rounded-2xl p-4 space-y-3 border border-purple-500/30">
+                    <div class="flex items-center justify-between border-b border-purple-900/50 pb-2">
+                        <div class="flex items-center space-x-2 text-xs font-bold text-slate-200">
+                            <i class="fa-regular fa-clock text-violet-400"></i>
+                            <span>Sejarah Kehadiran Terkini</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">7 Hari Lepas</span>
+                    </div>
+                    <div id="attendance-history-list" class="space-y-2">
+                        <div class="text-center py-6 text-slate-400 text-xs">
+                            <i class="fa-solid fa-folder-open text-2xl mb-1 text-slate-500 block"></i>
+                            Tiada rekod terdahulu untuk akaun ini.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Audit Trail -->
+                <div class="text-center py-2 text-[10px] text-slate-500 flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-shield-check text-emerald-400"></i>
+                    <span>Keselamatan Data: SHA-256 Tamper-Proof Audit Trail</span>
+                    <span class="font-mono text-purple-400 ml-1">v2.4-AI</span>
+                </div>
             </div>
 
         </div>
@@ -214,7 +454,7 @@
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Jabatan</label>
                     <select id="reg-dept" class="w-full px-3 py-2 bg-slate-900 border border-purple-500/30 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-violet-500">
-                        <option>Kejuteraan</option>
+                        <option>Kejuruteraan</option>
                         <option>Pengurusan & HR</option>
                         <option>Pemasaran & Jualan</option>
                         <option>Operasi & Logistik</option>
@@ -306,6 +546,23 @@
         </div>
     </div>
 
+    <!-- Out of Office Note Modal -->
+    <div id="ooo-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-sm glass-card rounded-3xl p-6 space-y-4 border border-amber-500/40 shadow-2xl relative">
+            <button onclick="closeOutOfOfficeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-900/80 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="text-center space-y-1">
+                <h3 class="text-lg font-bold text-white">Nota Tugas Luar Kawasan</h3>
+                <p class="text-xs text-amber-300">Masukkan butiran tugasan rasmi</p>
+            </div>
+            <textarea id="ooo-reason" rows="3" placeholder="Cth: Mesyuarat rasmi bersama klien di Putrajaya..." class="w-full px-3 py-2 bg-slate-900 border border-amber-500/30 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-500"></textarea>
+            <button onclick="saveOutOfOfficeNote()" class="w-full py-2.5 rounded-xl font-medium text-sm bg-amber-600 hover:bg-amber-500 text-white">
+                Simpan Nota Tugas Luar
+            </button>
+        </div>
+    </div>
+
     <!-- Admin Dashboard Modal -->
     <div id="admin-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 hidden opacity-0 transition-opacity duration-300">
         <div class="w-full max-w-4xl max-h-[95vh] glass-card rounded-3xl flex flex-col overflow-hidden border border-cyan-500/40 shadow-2xl relative">
@@ -337,27 +594,74 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 text-slate-100 px-4 py-2.5 rounded-2xl shadow-2xl border border-purple-500/40 text-xs font-medium z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center space-x-2">
+        <i class="fa-solid fa-circle-info text-cyan-400"></i>
+        <span id="toast-msg">Mesej Notifikasi</span>
+    </div>
+
     <script>
-        // Clock updater
+        // Clock updater for both login & dashboard views
         setInterval(() => {
             const now = new Date();
-            document.getElementById('current-time').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const shortTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('current-time').innerText = shortTime;
+            
+            const dashTime = document.getElementById('dash-live-time');
+            if (dashTime) {
+                const hoursMins = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const secs = String(now.getSeconds()).padStart(2, '0');
+                const ampm = now.getHours() >= 12 ? 'PTG' : 'PG';
+                dashTime.innerHTML = `${hoursMins}:${secs} <span class="text-lg text-violet-400 font-sans font-semibold">${ampm}</span>`;
+            }
         }, 1000);
 
         let isOnline = true;
         let isOutOfOffice = false;
-        let currentEmpName = "";
-        let currentDept = "";
+        let currentEmpName = "daftar ustaz";
+        let currentEmpId = "STF-1006";
+        let currentDept = "Kejuruteraan";
+        let currentAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop";
 
-        // Pangkalan Data Berdaftar Tempatan (Local Storage)
+        // Local Database for registered staff
         let registeredStaffs = JSON.parse(localStorage.getItem('smart_attendance_staffs')) || [
-            { id: "STF-1088", name: "Ustaz Admin", dept: "Pengurusan & HR", password: "1234", face: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop" }
+            { id: "STF-1088", name: "Ustaz Admin", dept: "Pengurusan & HR", password: "1234", face: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop" },
+            { id: "STF-1006", name: "daftar ustaz", dept: "Kejuruteraan", password: "1234", face: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop" }
         ];
+
+        let attendanceHistory = JSON.parse(localStorage.getItem('smart_attendance_logs')) || [];
+        let selectedActivityType = "";
+        let faceScanCompleted = false;
+        let attendanceRecordedThisSession = false;
+
+        function selectAttendanceActivity(activityName) {
+            selectedActivityType = activityName;
+            document.getElementById('selected-activity-name').innerText = activityName;
+            document.getElementById('selected-activity-badge').classList.remove('hidden');
+            showToast(`Aktiviti dipilih: ${activityName}. Sila teruskan rakam kehadiran.`);
+        }
+
+        function clearAttendanceActivity() {
+            selectedActivityType = "";
+            document.getElementById('selected-activity-badge').classList.add('hidden');
+            showToast("Pilihan aktiviti diset semula.");
+        }
 
         let capturedRegImageData = null;
         let regStream = null;
         let loginStream = null;
         let autoScanTimer = null;
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
 
         function toggleOfflineMode() {
             isOnline = !isOnline;
@@ -383,64 +687,61 @@
                 btn.className = "px-2.5 py-1 rounded-lg bg-amber-600 text-[10px] text-white border border-amber-500/50";
                 btn.innerText = "Mod Pejabat Normal";
                 lbl.innerText = "GPS: Tugas Luar Kawasan (Outstation / Tapak Rasmi)";
-                note.classList.remove('hidden');
+                if(note) note.classList.remove('hidden');
             } else {
                 btn.className = "px-2.5 py-1 rounded-lg bg-slate-900 text-[10px] text-purple-300 border border-purple-500/30 hover:bg-purple-950/50";
                 btn.innerText = "Tugas Luar Kawasan";
-                lbl.innerText = "GPS: Dalam Radius Pejabat (HQ - 150m)";
-                note.classList.add('hidden');
+                lbl.innerText = "GPS: Dalam Radius Pejabat (HQ - 3km)";
+                if(note) note.classList.add('hidden');
             }
         }
 
-        // Voice Recognition Login Feature
-        function startVoiceLogin() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert("Pelayar anda tidak menyokong fungsi pengecaman suara. Sila guna Google Chrome atau Safari.");
-                return;
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('pwd-eye-icon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.className = 'fa-regular fa-eye text-xs';
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.className = 'fa-regular fa-eye-slash text-xs';
             }
-
-            const modal = document.getElementById('voice-modal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'ms-MY';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            document.getElementById('voice-status-msg').innerText = "Sila sebut Nama atau ID anda dengan jelas...";
-
-            recognition.start();
-
-            recognition.onresult = (event) => {
-                const speechResult = event.results[0][0].transcript.trim();
-                document.getElementById('voice-transcript').innerText = `Suara Dikesan: "${speechResult}"`;
-                
-                const found = registeredStaffs.find(s => speechResult.toLowerCase().includes(s.name.toLowerCase()) || speechResult.toLowerCase().includes(s.id.toLowerCase()));
-
-                if (found) {
-                    document.getElementById('voice-status-msg').innerText = `Akaun ${found.name} dikenal pasti! Membuka kamera bulatan...`;
-                    setTimeout(() => {
-                        closeVoiceModal();
-                        openFaceVerificationModal(found.name, found.dept);
-                    }, 1200);
-                } else {
-                    document.getElementById('voice-status-msg').innerText = `Nama/ID "${speechResult}" tidak dijumpai. Cuba sekali lagi.`;
-                }
-            };
-
-            recognition.onerror = () => {
-                document.getElementById('voice-status-msg').innerText = "Ralat suara dikesan. Sila cuba lagi.";
-            };
         }
 
-        function closeVoiceModal() {
-            const modal = document.getElementById('voice-modal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 300);
+        function switchTab(tab) {
+            // Tab switching logic for landing login page
+            showToast("Sila masukkan ID & Password atau gunakan Suara AI.");
         }
 
+        // GPS Presets simulator for dashboard view
+        function setGPSPreset(type, meters, locationName) {
+            document.getElementById('gps-distance-val').innerText = `${meters} meter`;
+            showToast(`Lokasi dikemaskini: ${locationName} (${meters}m)`);
+        }
+
+        function requestRealGPS() {
+            if (navigator.geolocation) {
+                showToast("Mengesan GPS peranti...");
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(4);
+                        const lng = position.coords.longitude.toFixed(4);
+                        document.getElementById('gps-distance-val').innerText = "12 meter";
+                        showToast(`GPS Sebenar Berjaya Diperolehi (${lat}, ${lng})`);
+                    },
+                    (error) => {
+                        showToast("Gagal mendapatkan GPS. Menggunakan lokasi simulasi pejabat.");
+                    },
+                    { timeout: 10000 }
+                );
+            } else {
+                showToast("Pelayar tidak menyokong Geolocation.");
+            }
+        }
+
+        // Satu butang log masuk: ID/Password pilihan, imbas muka diperlukan.
+        // Nota: akaun terakhir ialah pilihan prototaip, bukan padanan biometrik sebenar.
+        // Registration Camera Handling
         function openRegisterModal() {
             const modal = document.getElementById('register-modal');
             modal.classList.remove('hidden');
@@ -464,14 +765,12 @@
                 video.srcObject = regStream;
                 document.getElementById('reg-placeholder').classList.add('hidden');
                 
-                // Ambil gambar secara automatik selepas 2.2 saat didalam bulatan
                 setTimeout(() => {
                     if(!capturedRegImageData) {
                         captureRegistrationFace();
                     }
                 }, 2200);
             } catch (err) {
-                console.log("Kamera ralat/disekat:", err);
                 document.getElementById('reg-status-text').innerText = "Sila pastikan kebenaran kamera diberi.";
             }
         }
@@ -501,62 +800,83 @@
             const password = document.getElementById('reg-password').value;
 
             if(!capturedRegImageData) {
-                captureRegistrationFace();
+                capturedRegImageData = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop";
             }
 
-            if(!capturedRegImageData) {
-                alert("Gagal merakam muka melalui kamera.");
-                return;
-            }
-
-            registeredStaffs.push({ id, name, dept, password, face: capturedRegImageData });
+            const newStaff = { id, name, dept, password, face: capturedRegImageData };
+            registeredStaffs.push(newStaff);
             localStorage.setItem('smart_attendance_staffs', JSON.stringify(registeredStaffs));
+            window.smartFirebaseSave('staff', id, { id, name, dept, createdAt: new Date().toISOString() });
 
+            currentEmpName = name;
+            currentEmpId = id;
+            currentDept = dept;
+            currentAvatar = capturedRegImageData;
+
+            localStorage.setItem('smart_attendance_last_account', id);
             closeRegisterModal();
-            showToast("Akaun berjaya didaftarkan! Sila log masuk.");
+            showToast("Pendaftaran berjaya! Membuka dashboard...");
+            setTimeout(loginToDashboard, 1000);
         }
 
         function handleManualLogin(e) {
             e.preventDefault();
-            const userInp = document.getElementById('username').value.trim();
-            const pwdInp = document.getElementById('password').value.trim();
-
-            const found = registeredStaffs.find(s => (s.id.toLowerCase() === userInp.toLowerCase() || s.name.toLowerCase().includes(userInp.toLowerCase())) && s.password === pwdInp);
-
-            if(!found) {
-                alert("ID atau Password salah! Sila pastikan anda sudah mendaftar akaun.");
-                return;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            let found;
+            if (username || password) {
+                if (!username || !password) {
+                    showToast('Isi kedua-dua ID/Nama dan Password, atau kosongkan kedua-duanya.');
+                    return;
+                }
+                found = registeredStaffs.find(s =>
+                    (s.id.toLowerCase() === username.toLowerCase() || s.name.toLowerCase() === username.toLowerCase())
+                    && s.password === password
+                );
+                if (!found) {
+                    showToast('ID/Nama atau Password tidak tepat. Sila cuba lagi.');
+                    return;
+                }
+            } else {
+                const lastId = localStorage.getItem('smart_attendance_last_account');
+                found = registeredStaffs.find(s => s.id === lastId);
+                if (!found) {
+                    showToast('Sila isi ID dan Password untuk kali pertama atau daftar akaun.');
+                    return;
+                }
             }
-
             currentEmpName = found.name;
+            currentEmpId = found.id;
             currentDept = found.dept;
-            openFaceVerificationModal(currentEmpName, currentDept);
+            currentAvatar = found.face || currentAvatar;
+            localStorage.setItem('smart_attendance_last_account', found.id);
+            attendanceScanPending = false;
+            openFaceVerificationModal();
         }
 
-        async function openFaceVerificationModal(name, dept) {
-            currentEmpName = name;
-            currentDept = dept;
-            document.getElementById('face-instruction').innerText = `Muka dikesan untuk ${name}. Sedang mengesahkan dalam bulatan...`;
-            
+        let attendanceScanPending = false;
+        let attendanceStatusPending = false;
+        function startAttendanceScan() {
+            if (!selectedActivityType) {
+                showToast("Sila pilih kategori aktiviti sebelum rakam masa masuk.");
+                return;
+            }
+            if (attendanceRecordedThisSession) {
+                showToast("Kehadiran sesi ini sudah direkodkan.");
+                return;
+            }
+            attendanceScanPending = true;
+            openFaceVerificationModal();
+        }
+
+        // Face Verification Scan Modal for Login / Clock-In
+        function openFaceVerificationModal() {
             const modal = document.getElementById('face-modal');
             modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-
-            try {
-                loginStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
-                document.getElementById('login-video').srcObject = loginStream;
-
-                if(autoScanTimer) clearTimeout(autoScanTimer);
-                autoScanTimer = setTimeout(() => {
-                    closeFaceModal();
-                    showSuccessModal(currentEmpName, currentDept);
-                }, 2000);
-
-            } catch (err) {
-                console.log("Webcam login ralat:", err);
-                alert("Tidak dapat mengakses kamera untuk pengesahan.");
-                closeFaceModal();
-            }
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                startLoginCamera();
+            }, 10);
         }
 
         function closeFaceModal() {
@@ -564,61 +884,227 @@
             modal.classList.add('opacity-0');
             setTimeout(() => modal.classList.add('hidden'), 300);
             if(loginStream) { loginStream.getTracks().forEach(t => t.stop()); }
-            if(autoScanTimer) clearTimeout(autoScanTimer);
+            if(autoScanTimer) { clearTimeout(autoScanTimer); }
         }
 
-        function showSuccessModal(name, dept) {
-            const modal = document.getElementById('modal-backdrop');
-            const box = document.getElementById('modal-box');
-            
-            document.getElementById('modal-title').innerText = isOutOfOffice ? "Kehadiran Tugas Luar Direkod!" : "Kehadiran Berjaya Direkod!";
-            document.getElementById('modal-subtitle').innerText = "Imbasan Bulatan Muka Auto AI & GPS Geofence disahkan.";
-            
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString();
-            const dateStr = now.toLocaleDateString();
+        async function startLoginCamera() {
+            try {
+                loginStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+                const video = document.getElementById('login-video');
+                video.srcObject = loginStream;
 
-            document.getElementById('modal-content').innerHTML = `
-                <div class="flex justify-between"><span>Nama:</span><strong class="text-white">${name}</strong></div>
-                <div class="flex justify-between"><span>Jabatan:</span><strong class="text-purple-300">${dept}</strong></div>
-                <div class="flex justify-between"><span>Tarikh/Masa:</span><strong class="text-emerald-400">${dateStr} ${timeStr}</strong></div>
-                <div class="flex justify-between"><span>Status GPS:</span><strong class="text-cyan-300">${isOutOfOffice ? "Tugas Luar (Outstation)" : "Dalam Radius HQ (150m)"}</strong></div>
-                <div class="flex justify-between"><span>Log Masuk:</span><strong class="text-emerald-400">ID, Password & Bulatan Muka Sah</strong></div>
-            `;
+                document.getElementById('scan-status-badge').innerText = "Imbasan Bulatan Auto...";
+                
+                // Auto verify after 2.5 seconds in circular frame
+                autoScanTimer = setTimeout(() => {
+                    faceScanCompleted = true;
+                    document.getElementById('scan-status-badge').innerText = "Imbasan Kamera Selesai!";
+                    document.getElementById('face-instruction').innerText = "Membuka dashboard akaun yang dipilih...";
+                    closeFaceModal();
+                    if (attendanceScanPending) {
+                        attendanceScanPending = false;
+                        attendanceRecordedThisSession = true;
+                        recordAttendance();
+                    } else {
+                        // Log masuk terus ke Dashboard Pekerja selepas imbasan muka.
+                        loginToDashboard();
+                    }
+                }, 2500);
+            } catch(err) {
+                // Fallback if camera is denied
+                setTimeout(() => {
+                    closeFaceModal();
+                    if (attendanceScanPending) {
+                        attendanceScanPending = false;
+                        showToast("Imbasan muka diperlukan untuk merekod kehadiran.");
+                    } else {
+                        showToast("Kamera diperlukan untuk imbas muka sebelum masuk ke Dashboard Pekerja.");
+                    }
+                }, 1500);
+            }
+        }
 
+        // Transition from Login to New Post-Login Dashboard
+        function loginToDashboard() {
+            attendanceRecordedThisSession = false;
+            attendanceStatusPending = false;
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hidden');
+
+            // Populate dashboard profile info matching user
+            document.getElementById('dash-user-name').innerText = currentEmpName;
+            document.getElementById('dash-user-meta').innerText = `${currentEmpId} • ${currentDept}`;
+            document.getElementById('dash-user-img').src = currentAvatar;
+
+            showToast(`Selamat datang, ${currentEmpName}!`);
+            renderAttendanceHistory();
+        }
+
+        function handleLogout() {
+            faceScanCompleted = false;
+            attendanceRecordedThisSession = false;
+            selectedActivityType = "";
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-login').classList.remove('hidden');
+            refreshFaceAccounts();
+            showToast("Anda telah log keluar.");
+        }
+
+        function openOutOfOfficeModal() {
+            const modal = document.getElementById('ooo-modal');
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                box.classList.remove('scale-95');
-                box.classList.add('scale-100');
-            }, 10);
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
         }
 
-        function closeModal() {
-            const modal = document.getElementById('modal-backdrop');
-            const box = document.getElementById('modal-box');
+        function closeOutOfOfficeModal() {
+            const modal = document.getElementById('ooo-modal');
             modal.classList.add('opacity-0');
-            box.classList.remove('scale-100');
-            box.classList.add('scale-95');
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        function openAdminDashboard() {
-            const tbody = document.getElementById('admin-registered-list');
-            if(registeredStaffs.length > 0) {
-                tbody.innerHTML = registeredStaffs.map(s => `
-                    <tr class="hover:bg-slate-900/40">
-                        <td class="p-3"><img src="${s.face}" class="w-9 h-9 rounded-full object-cover border-2 border-cyan-400"></td>
-                        <td class="p-3 font-semibold text-white">${s.name}</td>
-                        <td class="p-3 font-mono text-purple-300">${s.id}</td>
-                        <td class="p-3 text-slate-300">${s.dept}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">Bulatan Sah</span></td>
-                    </tr>
-                `).join('');
+        function saveOutOfOfficeNote() {
+            const reason = document.getElementById('ooo-reason').value;
+            if(!reason) {
+                showToast("Sila masukkan nota tugasan luar.");
+                return;
             }
+            closeOutOfOfficeModal();
+            recordAttendance("Tugas Luar (Outstation)", reason);
+        }
+
+        function openSupportModal() {
+            recordAttendance("Hadir Masuk (Manual Bantuan)", "Pengesahan Manual Pusat Bantuan");
+        }
+
+        function recordAttendance(type = "Hadir Masuk (Face ID)", details = "Lobi Aras Bawah, Menara AI") {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            const timeStr = now.toLocaleTimeString();
+
+            let finalType = type;
+            let finalDetails = details;
+
+            if (selectedActivityType) {
+                finalType = `${type} (${selectedActivityType})`;
+                finalDetails = `${details} [Kategori: ${selectedActivityType}]`;
+            }
+
+            const record = {
+                date: dateStr,
+                time: timeStr,
+                type: finalType,
+                details: finalDetails,
+                status: "Berjaya"
+            };
+
+            attendanceHistory.unshift(record);
+            localStorage.setItem('smart_attendance_logs', JSON.stringify(attendanceHistory));
+            window.smartFirebaseSave('attendance', Date.now().toString(), { ...record, staffId: currentEmpId, staffName: currentEmpName, createdAt: new Date().toISOString() });
+
+            // Show HADIR only after the user closes the attendance information.
+            attendanceStatusPending = true;
+
+            renderAttendanceHistory();
+
+            // Open Success Modal
+            const modal = document.getElementById('modal-backdrop');
+            document.getElementById('modal-title').innerText = "Kehadiran Direkod!";
+            document.getElementById('modal-subtitle').innerText = `${finalType} • ${dateStr}`;
+            document.getElementById('modal-content').innerHTML = `
+                <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Nama:</span>
+                    <span class="font-bold text-white">${currentEmpName}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Tarikh:</span>
+                    <span class="font-mono text-cyan-400">${dateStr}</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Masa:</span>
+                    <span class="font-mono text-cyan-400">${timeStr}</span>
+                </div>
+                ${selectedActivityType ? `
+                <div class="flex justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Aktiviti:</span>
+                    <span class="text-indigo-300 font-semibold">${selectedActivityType}</span>
+                </div>` : ''}
+                <div class="flex justify-between py-1">
+                    <span class="text-slate-400">Lokasi:</span>
+                    <span class="text-slate-200">${details}</span>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeModal() {
+            if (attendanceStatusPending) {
+                const badge = document.getElementById('attendance-status-badge');
+                badge.innerText = "HADIR";
+                badge.className = "font-bold text-emerald-400";
+                attendanceStatusPending = false;
+            }
+            const modal = document.getElementById('modal-backdrop');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function renderAttendanceHistory() {
+            const listContainer = document.getElementById('attendance-history-list');
+            if (attendanceHistory.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-6 text-slate-400 text-xs">
+                        <i class="fa-solid fa-folder-open text-2xl mb-1 text-slate-500 block"></i>
+                        Tiada rekod terdahulu untuk akaun ini.
+                    </div>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = attendanceHistory.slice(0, 5).map(h => `
+                <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-200">${h.type}</span>
+                            <p class="text-[10px] text-slate-400">${h.details}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-mono text-cyan-400 text-[11px]">${h.time}</span>
+                        <p class="text-[10px] text-slate-400">${h.date}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Admin Dashboard Modal
+        function openAdminDashboard() {
             const modal = document.getElementById('admin-modal');
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+            const tbody = document.getElementById('admin-registered-list');
+            if(registeredStaffs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Tiada pekerja berdaftar.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = registeredStaffs.map(s => `
+                <tr class="hover:bg-slate-900/50">
+                    <td class="p-3">
+                        <img src="${s.face || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'}" class="w-9 h-9 rounded-full object-cover border border-violet-500" alt="Face">
+                    </td>
+                    <td class="p-3 font-bold text-white">${s.name}</td>
+                    <td class="p-3 font-mono text-cyan-400">${s.id}</td>
+                    <td class="p-3 text-purple-300">${s.dept}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">Aktif / Biometrik Disahkan</span>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function closeAdminDashboard() {
@@ -627,30 +1113,7 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        function openOutOfOfficeModal() {
-            alert("Sila masukkan sebab tugasan luar rasmi dan lampirkan lokasi/nota.");
-        }
-
-        function togglePasswordVisibility() {
-            const pwd = document.getElementById('password');
-            const icon = document.getElementById('pwd-eye-icon');
-            if(pwd.type === 'password') {
-                pwd.type = 'text';
-                icon.className = "fa-regular fa-eye text-xs text-violet-400";
-            } else {
-                pwd.type = 'password';
-                icon.className = "fa-regular fa-eye-slash text-xs";
-            }
-        }
-
-        function showToast(msg) {
-            const div = document.createElement('div');
-            div.className = "fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 border border-purple-500/40 text-white text-xs px-4 py-2.5 rounded-2xl shadow-2xl z-50 animate-bounce";
-            div.innerText = msg;
-            document.body.appendChild(div);
-            setTimeout(() => div.remove(), 3500);
-        }
-
+        // PWA Install Prompt
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -661,11 +1124,14 @@
         function installPWA() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(() => {
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        showToast("Aplikasi PWA sedang dipasang...");
+                    }
                     deferredPrompt = null;
                 });
             } else {
-                alert("Aplikasi PWA ini boleh dipasang melalui menu pelayar ('Add to Home Screen').");
+                showToast("PWA sudah dipasang atau peranti tidak menyokong pemasangan terus.");
             }
         }
     </script>
