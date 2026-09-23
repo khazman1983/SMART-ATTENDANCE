@@ -44,14 +44,16 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
     <script>
       const firebaseConfig = {
-        apiKey: "IAIzaSyAN4QhPxoRna_8s6u6uQJ9LEfNjyyhv_Cs",
-        authDomain: "Imart-attendance-a5298.firebaseapp.com",
+        apiKey: "AIzaSyAN4QhPxoRna_8s6u6uQJ9LEfNjyyhv_Cs",
+        authDomain: "smart-attendance-a5298.firebaseapp.com",
         projectId: "smart-attendance-a5298",
         storageBucket: "smart-attendance-a5298.firebasestorage.app",
         messagingSenderId: "961238218353",
-        appId: "1:961238218353:web:0fe8ac3e60b9b8b4d9cdd0"
+        appId: "1:961238218353:web:0fe8ac3e60b9b8b4d9cdd0",
+        measurementId: "G-1P3HYXYNYL"
       };
       // Aktifkan Anonymous dalam Firebase Console > Authentication > Sign-in method.
       // Ini bukan pengesahan biometrik. Peraturan keselamatan Firestore mesti ditetapkan.
@@ -73,6 +75,33 @@
           await session.db.collection('users').doc(session.uid)
             .collection(collection).doc(String(key)).set(data, { merge: true });
         } catch (error) { console.warn("Firebase save:", error.message); }
+      };
+      // Upload the captured registration image to private Firebase Storage.
+      window.smartUploadFace = async function(id, dataUrl) {
+        const session = await window.smartFirebaseReady;
+        if (!session || !dataUrl || !dataUrl.startsWith('data:image/')) return;
+        try {
+          const path = 'faces/' + session.uid + '/' + encodeURIComponent(id) + '.jpg';
+          const blob = await (await fetch(dataUrl)).blob();
+          await firebase.storage().ref(path).put(blob, { contentType: blob.type });
+          await session.db.collection('users').doc(session.uid).collection('staff').doc(id).set({facePath: path}, {merge:true});
+        } catch(e) { console.warn('Face upload:', e.message); showToast('Gambar muka belum berjaya disegerakkan.'); }
+      };
+      window.smartSaveAttendance = async function(record) {
+        const session = await window.smartFirebaseReady;
+        if (!session) { showToast('Rekod hanya tersimpan pada peranti. Firebase belum bersambung.'); return; }
+        const id = Date.now().toString();
+        const save = location => session.db.collection('users').doc(session.uid).collection('attendance').doc(id).set({
+          ...record, location, uid: session.uid, recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        try {
+          if (!navigator.geolocation) { await save(null); return; }
+          navigator.geolocation.getCurrentPosition(async pos => {
+            try { await save({lat:pos.coords.latitude, lng:pos.coords.longitude, accuracy:pos.coords.accuracy, capturedAt:new Date().toISOString()}); }
+            catch(e) { console.warn('Attendance sync:',e.message); showToast('Gagal menyegerakkan rekod ke Firebase.'); }
+          }, async () => { try { await save(null); } catch(e) { console.warn(e.message); } },
+          {enableHighAccuracy:true,timeout:12000,maximumAge:0});
+        } catch(e) { console.warn('Attendance sync:',e.message); }
       };
     </script>
 </head>
@@ -806,7 +835,8 @@
             const newStaff = { id, name, dept, password, face: capturedRegImageData };
             registeredStaffs.push(newStaff);
             localStorage.setItem('smart_attendance_staffs', JSON.stringify(registeredStaffs));
-            window.smartFirebaseSave('staff', id, { id, name, dept, createdAt: new Date().toISOString() });
+            window.smartFirebaseSave('staff', id, { id, name, dept, facePath: 'faces/' + id, createdAt: new Date().toISOString() });
+            window.smartUploadFace(id, capturedRegImageData);
 
             currentEmpName = name;
             currentEmpId = id;
@@ -999,7 +1029,7 @@
 
             attendanceHistory.unshift(record);
             localStorage.setItem('smart_attendance_logs', JSON.stringify(attendanceHistory));
-            window.smartFirebaseSave('attendance', Date.now().toString(), { ...record, staffId: currentEmpId, staffName: currentEmpName, createdAt: new Date().toISOString() });
+            window.smartSaveAttendance({ ...record, staffId: currentEmpId, staffName: currentEmpName, createdAt: new Date().toISOString() });
 
             // Show HADIR only after the user closes the attendance information.
             attendanceStatusPending = true;
