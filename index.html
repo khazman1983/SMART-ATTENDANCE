@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Attendance - PWA AI Face Recognition, GPS & Offline</title>
+    <title>Smart Attendance PWA - AI Face Recognition, GPS & Offline</title>
     
     <!-- PWA Manifest & Theme Color -->
     <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Smart%20Attendance%20AI%22%2C%22short_name%22%3A%22SmartAttendance%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%238b5cf6%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F192x192%2F8b5cf6%2Fffffff%3Ftext%3DSA%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F512x512%2F8b5cf6%2Fffffff%3Ftext%3DSA%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
@@ -39,15 +39,6 @@
             50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); }
         }
         .glow-effect { animation: pulse-glow 3s infinite ease-in-out; }
-        @keyframes wave {
-            0%, 100% { height: 8px; }
-            50% { height: 28px; }
-        }
-        .wave-bar { animation: wave 1.2s infinite ease-in-out; }
-        .wave-bar:nth-child(2) { animation-delay: 0.2s; }
-        .wave-bar:nth-child(3) { animation-delay: 0.4s; }
-        .wave-bar:nth-child(4) { animation-delay: 0.6s; }
-        .wave-bar:nth-child(5) { animation-delay: 0.3s; }
     </style>
 </head>
 <body class="h-full text-slate-100 flex items-center justify-center p-0 sm:p-4 overflow-x-hidden">
@@ -65,7 +56,7 @@
                 <button id="pwa-install-btn" onclick="installPWA()" class="hidden px-2 py-0.5 rounded text-[10px] font-bold bg-violet-600 text-white animate-pulse flex items-center space-x-1">
                     <i class="fa-solid fa-download"></i> <span>INSTALL APP</span>
                 </button>
-                <span id="offline-badge" onclick="toggleOfflineMode()" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-pointer flex items-center space-x-1" title="Klik untuk mod Online/Offline">
+                <span id="offline-badge" onclick="toggleOfflineMode()" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-pointer flex items-center space-x-1">
                     <i class="fa-solid fa-wifi text-[9px]"></i> <span id="offline-txt">ONLINE</span>
                 </span>
                 <i class="fa-solid fa-battery-full text-[10px] text-emerald-400"></i>
@@ -86,7 +77,7 @@
                 <p class="text-[11px] text-purple-300/80 font-medium">Sistem Kehadiran Pintar, Pengecaman Wajah AI & GPS Geofence</p>
             </div>
 
-            <!-- Top Action Buttons -->
+            <!-- Top Action Buttons (Log Masuk & Daftar Akaun) -->
             <div class="grid grid-cols-2 gap-3">
                 <button onclick="switchTab('login')" id="btn-tab-login" class="py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 transition-all shadow-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-600/30">
                     <i class="fa-solid fa-right-to-bracket"></i>
@@ -109,68 +100,6 @@
                 <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-300 tracking-wider">AKSES</span>
             </button>
 
-            <!-- AI Voice & Face Attendance Panel -->
-            <div class="glass-card rounded-2xl p-4 space-y-3 glow-effect relative overflow-hidden">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <span class="relative flex h-3 w-3">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                        </span>
-                        <span class="text-[11px] font-bold tracking-wider text-emerald-400 uppercase">AI VOICE & FACE ACTIVE</span>
-                    </div>
-                    <button onclick="openFaceVerificationModal('Pekerja Aktif', 'Pusat Utama')" class="px-2.5 py-1 rounded-lg bg-violet-600/30 hover:bg-violet-600/50 text-[10px] font-semibold text-violet-300 border border-violet-500/30 flex items-center space-x-1 transition-all">
-                        <i class="fa-solid fa-camera"></i>
-                        <span>Imbas Wajah 3x Kelip</span>
-                    </button>
-                </div>
-
-                <div class="glass-panel rounded-xl p-3 relative">
-                    <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
-                            <div class="flex items-end space-x-0.5 h-3.5">
-                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
-                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
-                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
-                                <div class="w-0.5 bg-indigo-400 wave-bar rounded-full"></div>
-                            </div>
-                        </div>
-                        <div class="space-y-0.5 flex-1 min-w-0">
-                            <h4 class="text-xs font-semibold text-white">Sebut Je Nama Anda Terus Auto Masuk</h4>
-                            <p id="transcript-text" class="text-[10px] text-emerald-300/90 font-mono leading-relaxed truncate">
-                                "Sebut nama atau mulakan imbasan wajah AI berdekatan GPS pejabat..."
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Simulation Voice Buttons -->
-                <div class="space-y-1.5 pt-0.5">
-                    <div class="flex items-center justify-between text-[10px]">
-                        <span class="text-purple-300/70 font-medium">UJI SEBUTAN PANTAS (SIMULASI SUARA):</span>
-                        <span class="text-cyan-400 font-semibold">AUTO MASUK SERTA-MERTA</span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="triggerVoiceCheckIn('Ahmad Faiz', 'Kejuteraan')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
-                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
-                            <span class="truncate text-slate-200">Sebut: "Ahmad"</span>
-                        </button>
-                        <button onclick="triggerVoiceCheckIn('Nurul Huda', 'Pengurusan & HR')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
-                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
-                            <span class="truncate text-slate-200">Sebut: "Nurul"</span>
-                        </button>
-                        <button onclick="triggerVoiceCheckIn('Tan Wei Loon', 'Operasi')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
-                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
-                            <span class="truncate text-slate-200">Sebut: "Tan"</span>
-                        </button>
-                        <button onclick="triggerVoiceCheckIn('Pravin Mohan', 'Pemasaran')" class="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-violet-950/60 border border-purple-500/20 text-xs text-left flex items-center space-x-2 transition-all group">
-                            <i class="fa-solid fa-microphone text-violet-400 group-hover:scale-110 transition-transform"></i>
-                            <span class="truncate text-slate-200">Sebut: "Pravin"</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <!-- GPS Location & Out-of-Office Toggle Bar -->
             <div class="glass-card rounded-2xl p-3.5 space-y-2 border border-purple-500/20">
                 <div class="flex items-center justify-between text-xs">
@@ -188,31 +117,31 @@
                 </div>
             </div>
 
-            <!-- Manual Login Form -->
+            <!-- Manual Login Form (Hanya Semak Pangkalan Data Pendaftaran Sendiri) -->
             <form onsubmit="handleManualLogin(event)" class="space-y-4 glass-card rounded-2xl p-4">
                 <div class="space-y-1.5">
                     <div class="flex justify-between items-center text-xs">
                         <label for="username" class="font-medium text-slate-300">ID Kakitangan / Emel / No Telefon</label>
-                        <span class="text-[10px] text-purple-400/80">Atau taip manual</span>
+                        <span class="text-[10px] text-purple-400/80">Masukkan ID Berdaftar</span>
                     </div>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                             <i class="fa-regular fa-user"></i>
                         </span>
-                        <input type="text" id="username" value="STF-1088" required class="w-full pl-9 pr-3 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                        <input type="text" id="username" placeholder="Cth: STF-9901 atau nama anda" required class="w-full pl-9 pr-3 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
                     </div>
                 </div>
 
                 <div class="space-y-1.5">
                     <div class="flex justify-between items-center text-xs">
                         <label for="pin" class="font-medium text-slate-300">Kod PIN Keselamatan (4-Digit)</label>
-                        <span class="text-[10px] text-purple-400/80 font-mono">Lalai: 1234</span>
+                        <span class="text-[10px] text-purple-400/80 font-mono">PIN Akaun Anda</span>
                     </div>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                             <i class="fa-solid fa-key"></i>
                         </span>
-                        <input type="password" id="pin" value="1234" maxlength="4" required class="w-full pl-9 pr-10 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 tracking-widest placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                        <input type="password" id="pin" placeholder="••••" maxlength="4" required class="w-full pl-9 pr-10 py-2.5 bg-slate-900/90 border border-purple-500/30 rounded-xl text-sm text-slate-100 tracking-widest placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
                         <button type="button" onclick="togglePinVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors">
                             <i id="pin-eye-icon" class="fa-regular fa-eye-slash text-xs"></i>
                         </button>
@@ -220,30 +149,82 @@
                 </div>
 
                 <button type="submit" class="w-full py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center space-x-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all">
-                    <span>Log Masuk Secara Manual & Wajah</span>
+                    <span>Log Masuk & Imbas Wajah Berdaftar</span>
                     <i class="fa-solid fa-arrow-right text-xs"></i>
                 </button>
             </form>
 
             <!-- Support & Offline Info -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-center space-y-1">
-                <p class="text-[11px] text-slate-300">Mengalami masalah rangkaian atau telefon?</p>
-                <button onclick="triggerSupportCode()" class="text-xs font-semibold text-cyan-400 hover:underline">
-                    Guna Kod Sokongan / Pendaftaran Alternatif
-                </button>
-            </div>
-
-            <div class="pt-2 pb-6 text-center">
-                <button onclick="openAdminDashboard()" class="inline-flex items-center space-x-2 text-xs text-purple-300/70 hover:text-cyan-400 transition-colors">
-                    <i class="fa-solid fa-shield-cat"></i>
-                    <span>Akses Sebagai Pentadbir Sistem (Dashboard Admin)</span>
+                <p class="text-[11px] text-slate-300">Belum mempunyai akaun?</p>
+                <button onclick="openRegisterModal()" class="text-xs font-semibold text-cyan-400 hover:underline">
+                    Daftar Akaun Baru & Tangkap Muka Biometrik AI
                 </button>
             </div>
 
         </div>
     </div>
 
-    <!-- AI Face Verification Modal -->
+    <!-- Registration Modal (Borang Pendaftaran + Tangkap Muka Webcam) -->
+    <div id="register-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-sm glass-card rounded-3xl p-6 space-y-4 border border-violet-500/40 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+            <button onclick="closeRegisterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-900/80 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <h3 class="text-lg font-bold text-white">Daftar Akaun Pekerja Baru</h3>
+                <p class="text-xs text-purple-300">Pendaftaran Biometrik Wajah AI & PIN</p>
+            </div>
+
+            <form onsubmit="handleRegisterSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Nama Penuh</label>
+                    <input type="text" id="reg-name" placeholder="Cth: Muhammad Ali" required class="w-full px-3 py-2 bg-slate-900 border border-purple-500/30 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-violet-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">ID Kakitangan / Emel</label>
+                    <input type="text" id="reg-id" placeholder="Cth: STF-2026" required class="w-full px-3 py-2 bg-slate-900 border border-purple-500/30 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-violet-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Jabatan</label>
+                    <select id="reg-dept" class="w-full px-3 py-2 bg-slate-900 border border-purple-500/30 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-violet-500">
+                        <option>Kejuteraan</option>
+                        <option>Pengurusan & HR</option>
+                        <option>Pemasaran & Jualan</option>
+                        <option>Operasi & Logistik</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Kod PIN Keselamatan (4-Digit)</label>
+                    <input type="password" id="reg-pin" placeholder="••••" maxlength="4" required class="w-full px-3 py-2 bg-slate-900 border border-purple-500/30 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-violet-500">
+                </div>
+
+                <!-- Live Camera Capture Box -->
+                <div class="space-y-1">
+                    <label class="block text-xs font-medium text-slate-300">Imbasan Muka Pendaftaran (Webcam)</label>
+                    <div class="relative w-full h-36 bg-slate-900 rounded-xl overflow-hidden border border-violet-500/40 flex items-center justify-center">
+                        <video id="reg-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                        <canvas id="reg-canvas" class="hidden"></canvas>
+                        <div id="reg-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-950/70">
+                            <i class="fa-solid fa-camera text-2xl mb-1 text-violet-400"></i>
+                            <span class="text-[10px]">Kamera belum diaktifkan</span>
+                        </div>
+                        <img id="reg-captured-img" class="hidden absolute inset-0 w-full h-full object-cover" alt="Captured Face">
+                    </div>
+                    <button type="button" onclick="startRegCamera()" class="w-full py-1.5 bg-violet-600/30 hover:bg-violet-600/50 text-violet-300 rounded-lg text-xs font-semibold border border-violet-500/30">
+                        <i class="fa-solid fa-video mr-1"></i> Buka Kamera & Tangkap Muka
+                    </button>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 px-4 rounded-xl font-medium text-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 text-white shadow-lg shadow-indigo-600/30">
+                    Simpan Pendaftaran Akaun
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI Face Verification Modal (Login Scan) -->
     <div id="face-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
         <div class="w-full max-w-sm glass-card rounded-3xl p-6 text-center space-y-4 border border-violet-500/40 shadow-2xl relative">
             <button onclick="closeFaceModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-900/80 flex items-center justify-center">
@@ -251,14 +232,13 @@
             </button>
 
             <div class="space-y-1">
-                <h3 class="text-lg font-bold text-white">Pengecaman Wajah AI</h3>
-                <p class="text-xs text-purple-300">Pengesahan Elak Gambar Statik (Liveness Check)</p>
+                <h3 class="text-lg font-bold text-white">Pengesahan Muka Log Masuk</h3>
+                <p id="face-login-subtitle" class="text-xs text-purple-300">Sila hadap kamera untuk semakan padanan biometrik</p>
             </div>
 
             <div class="relative w-44 h-44 mx-auto rounded-full overflow-hidden border-2 border-violet-500/60 bg-slate-900 flex items-center justify-center shadow-inner">
-                <div class="absolute inset-0 bg-gradient-to-tr from-violet-900/40 to-indigo-900/40 flex items-center justify-center text-4xl text-violet-300">
-                    <i class="fa-solid fa-face-smile"></i>
-                </div>
+                <video id="login-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                <canvas id="login-canvas" class="hidden"></canvas>
                 <div class="absolute inset-0 border-4 border-dashed border-emerald-400/50 rounded-full animate-spin" style="animation-duration: 10s;"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent flex flex-col items-center justify-end pb-3">
                     <span id="blink-counter-badge" class="px-3 py-1 rounded-full bg-violet-600/90 text-[11px] font-bold text-white shadow">
@@ -301,200 +281,33 @@
         </div>
     </div>
 
-    <!-- Admin Dashboard Modal (Matching Screenshot) -->
+    <!-- Admin Dashboard Modal -->
     <div id="admin-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 hidden opacity-0 transition-opacity duration-300">
         <div class="w-full max-w-4xl max-h-[95vh] glass-card rounded-3xl flex flex-col overflow-hidden border border-cyan-500/40 shadow-2xl relative">
-            
-            <!-- Admin Top Bar -->
-            <div class="p-4 bg-slate-900/95 border-b border-slate-800 flex flex-wrap justify-between items-center gap-3">
-                <div class="flex items-center space-x-2">
-                    <span class="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded-lg text-xs font-bold border border-cyan-500/30">SMART ATTENDANCE AI + FACE + GPS</span>
-                </div>
-                <div class="flex items-center space-x-3 text-xs">
-                    <span class="text-slate-300"><i class="fa-solid fa-wifi text-emerald-400 mr-1"></i> Dalam Talian</span>
-                    <span class="bg-slate-800 px-3 py-1 rounded-lg text-cyan-300 font-semibold border border-slate-700">USTAZ (STF-1088)</span>
-                    <button onclick="closeAdminDashboard()" class="px-3 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 rounded-lg border border-rose-500/30">Log Keluar</button>
-                </div>
+            <div class="p-4 bg-slate-900/95 border-b border-slate-800 flex justify-between items-center">
+                <span class="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded-lg text-xs font-bold border border-cyan-500/30">PANEL ADMIN PENTADBIR</span>
+                <button onclick="closeAdminDashboard()" class="text-slate-400 hover:text-white w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-
-            <!-- Admin Header Title -->
-            <div class="px-5 py-4 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap justify-between items-center gap-3">
-                <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
-                        <i class="fa-solid fa-table-columns"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-white uppercase">Dashboard Pentadbir Utama</h3>
-                        <p class="text-[11px] text-cyan-300/80">Konsol Kawalan Pentadbiran Kehadiran Pintar • Pengesahan Biometrik AI & GPS Geofence 150m</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button onclick="openRegisterModal()" class="px-3 py-1.5 bg-violet-600/30 hover:bg-violet-600/50 text-violet-200 rounded-lg text-xs font-semibold border border-violet-500/30">
-                        <i class="fa-solid fa-user-plus mr-1"></i> Daftar Pekerja
-                    </button>
-                    <button onclick="closeAdminDashboard()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold">
-                        <i class="fa-solid fa-mobile-screen mr-1"></i> Buka App Telefon Pekerja
-                    </button>
-                </div>
-            </div>
-
-            <!-- Admin Scrollable Content -->
-            <div class="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
-                
-                <!-- Stat Summary Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
-                        <span class="text-[10px] text-slate-400 font-medium">JUMLAH KAKITANGAN</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <h4 class="text-xl font-bold text-white">8</h4>
-                            <i class="fa-solid fa-users text-purple-400 text-sm"></i>
-                        </div>
-                        <span class="text-[10px] text-purple-300/80 mt-1 block">100% Berdaftar</span>
-                    </div>
-                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
-                        <span class="text-[10px] text-slate-400 font-medium">HADIR HARI INI</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <h4 class="text-xl font-bold text-emerald-400">4 / 8</h4>
-                            <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-                        </div>
-                        <span class="text-[10px] text-emerald-400/80 mt-1 block">Kadar: 50%</span>
-                    </div>
-                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
-                        <span class="text-[10px] text-slate-400 font-medium">TUGAS LUAR (OUTSTATION)</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <h4 class="text-xl font-bold text-amber-400">1</h4>
-                            <i class="fa-solid fa-briefcase text-amber-400 text-sm"></i>
-                        </div>
-                        <span class="text-[10px] text-amber-400/80 mt-1 block">Urusan Rasmi Tapak</span>
-                    </div>
-                    <div class="glass-panel p-3 rounded-2xl border border-slate-800">
-                        <span class="text-[10px] text-slate-400 font-medium">LEWAT HADIR</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <h4 class="text-xl font-bold text-rose-400">1</h4>
-                            <i class="fa-solid fa-clock text-rose-400 text-sm"></i>
-                        </div>
-                        <span class="text-[10px] text-rose-400/80 mt-1 block">Selepas 09:00 AM</span>
-                    </div>
-                    <div class="glass-panel p-3 rounded-2xl border border-slate-800 col-span-2 sm:col-span-1">
-                        <span class="text-[10px] text-slate-400 font-medium">PERLU KELULUSAN</span>
-                        <div class="flex items-baseline justify-between mt-1">
-                            <h4 class="text-xl font-bold text-purple-400">1</h4>
-                            <i class="fa-solid fa-triangle-exclamation text-purple-400 text-sm"></i>
-                        </div>
-                        <span class="text-[10px] text-purple-300/80 mt-1 block">Tugas Luar & Sokongan</span>
-                    </div>
-                </div>
-
-                <!-- Tabs Navigation -->
-                <div class="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3 text-xs">
-                    <button class="px-3 py-1.5 rounded-lg bg-violet-600 text-white font-medium flex items-center space-x-1.5">
-                        <i class="fa-solid fa-satellite-dish"></i>
-                        <span>Pantauan Masa Nyata (Live Feed)</span>
-                        <span class="px-1.5 py-0.2 bg-white/20 rounded-full text-[10px]">4</span>
-                    </button>
-                    <button class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium">Kelulusan Tugas Luar & Segera</button>
-                    <button class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium">Analitik & Rumusan AI (Gemini)</button>
-                    <button class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium">Direktori Pekerja</button>
-                </div>
-
-                <!-- Export & Filter Bar -->
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center space-x-2">
-                        <button onclick="exportAdminReport()" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-800 text-xs font-medium flex items-center space-x-1.5">
-                            <i class="fa-solid fa-file-excel"></i>
-                            <span>Eksport CSV</span>
-                        </button>
-                        <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-800 text-xs font-medium flex items-center space-x-1.5">
-                            <i class="fa-solid fa-print"></i>
-                            <span>Cetak / PDF</span>
-                        </button>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <select class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none">
-                            <option>Semua Jabatan</option>
-                            <option>Kejuteraan</option>
-                            <option>Pengurusan & HR</option>
-                            <option>Pemasaran & Jualan</option>
-                        </select>
-                        <select class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none">
-                            <option>Semua Status</option>
-                            <option>Hadir</option>
-                            <option>Tugas Luar</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Radar Geofence GPS Simulation Box -->
-                <div class="glass-panel p-4 rounded-2xl border border-cyan-500/30 space-y-3">
-                    <div class="flex flex-wrap items-center justify-between text-xs">
-                        <div class="flex items-center space-x-2 text-cyan-300 font-bold">
-                            <i class="fa-solid fa-radar animate-spin"></i>
-                            <span>RADAR GEOFENCE GPS PEJABAT (150M)</span>
-                        </div>
-                        <span class="text-slate-300 font-medium">IBU PEJABAT MENARA AI PUTRAJAYA</span>
-                        <div class="space-x-2">
-                            <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px]">Dalam Radius: 3</span>
-                            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px]">Luar Pejabat / Tugas Luar: 1</span>
-                        </div>
-                    </div>
-                    <div class="h-24 bg-slate-950/80 rounded-xl border border-slate-800 relative flex items-center justify-center overflow-hidden">
-                        <div class="absolute w-20 h-20 rounded-full border border-cyan-500/30 animate-ping"></div>
-                        <div class="absolute w-40 h-40 rounded-full border border-cyan-500/20"></div>
-                        <div class="text-[11px] text-cyan-400 font-mono z-10 flex flex-col items-center">
-                            <span>Koordinat Pejabat: 2.9213° N, 101.6559° E • Radius Had: 150m</span>
-                            <span class="text-[10px] text-emerald-300 mt-1">● Ahmad (28m)  ● Nurul (45m)  ● Tan (18m)  ● Pravin (26400m - Tugas Luar)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Staff Table -->
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <h3 class="text-sm font-bold text-white uppercase">Senarai Akaun Pekerja Berdaftar Dalam Sistem</h3>
                 <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-900/90 text-slate-400 font-medium border-b border-slate-800">
-                                <tr>
-                                    <th class="p-3">Kakitangan</th>
-                                    <th class="p-3">Jabatan</th>
-                                    <th class="p-3">Masa Masuk / Keluar</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Lokasi & GPS</th>
-                                    <th class="p-3">Pengecaman AI & Liveness</th>
-                                    <th class="p-3">Integriti Audit</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-800/60 text-slate-200">
-                                <tr class="hover:bg-slate-900/40">
-                                    <td class="p-3 font-semibold">Ahmad Faiz bin Zulkifli<br><span class="text-[10px] font-mono text-purple-400">STF-1081</span></td>
-                                    <td class="p-3 text-slate-300">Kejuteraan</td>
-                                    <td class="p-3 font-mono text-emerald-400">08:15:22<br><span class="text-[10px] text-slate-500">Belum Keluar</span></td>
-                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">HADIR</span></td>
-                                    <td class="p-3 text-[11px] text-slate-300">📍 Ibu Pejabat Menara AI<br><span class="text-[10px] text-emerald-400">Jarak: 28m dari pejabat</span></td>
-                                    <td class="p-3 text-[11px]">98% Padanan AI<br><span class="text-[10px] text-emerald-400">✓ Liveness 3x Kelipan</span></td>
-                                    <td class="p-3 font-mono text-[10px] text-slate-400">SHA256-<br>8A7F41C90D</td>
-                                </tr>
-                                <tr class="hover:bg-slate-900/40">
-                                    <td class="p-3 font-semibold">Nurul Huda binti Mansor<br><span class="text-[10px] font-mono text-purple-400">STF-1082</span></td>
-                                    <td class="p-3 text-slate-300">Pengurusan & HR</td>
-                                    <td class="p-3 font-mono text-emerald-400">08:28:45<br><span class="text-[10px] text-slate-500">Belum Keluar</span></td>
-                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">HADIR</span></td>
-                                    <td class="p-3 text-[11px] text-slate-300">📍 Ibu Pejabat Menara AI<br><span class="text-[10px] text-emerald-400">Jarak: 45m dari pejabat</span></td>
-                                    <td class="p-3 text-[11px]">96% Padanan AI<br><span class="text-[10px] text-emerald-400">✓ Liveness 3x Kelipan</span></td>
-                                    <td class="p-3 font-mono text-[10px] text-slate-400">SHA256-<br>5B1E90F43A</td>
-                                </tr>
-                                <tr class="hover:bg-slate-900/40">
-                                    <td class="p-3 font-semibold">Pravin a/l Mohan<br><span class="text-[10px] font-mono text-purple-400">STF-1084</span></td>
-                                    <td class="p-3 text-slate-300">Pemasaran & Jualan</td>
-                                    <td class="p-3 font-mono text-amber-400">08:45:10<br><span class="text-[10px] text-slate-500">Belum Keluar</span></td>
-                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold text-[10px]">TUGAS LUAR</span></td>
-                                    <td class="p-3 text-[11px] text-slate-300">📍 KLCC Convention Centre<br><span class="text-[10px] text-amber-400">Jarak: 26400m dari pejabat</span></td>
-                                    <td class="p-3 text-[11px]">95% Padanan AI<br><span class="text-[10px] text-emerald-400">✓ Liveness 3x Kelipan</span></td>
-                                    <td class="p-3 font-mono text-[10px] text-slate-400">SHA256-<br>91D0F38B6C</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Muka</th>
+                                <th class="p-3">Nama</th>
+                                <th class="p-3">ID / Emel</th>
+                                <th class="p-3">Jabatan</th>
+                                <th class="p-3">Status Muka</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-registered-list" class="divide-y divide-slate-800 text-slate-200">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-400">Tiada pekerja berdaftar lagi. Sila daftar akaun baru.</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-
             </div>
         </div>
     </div>
@@ -509,8 +322,17 @@
         let isOnline = true;
         let isOutOfOffice = false;
         let blinkCount = 0;
-        let currentEmpName = "Pekerja";
-        let currentDept = "Pejabat";
+        let currentEmpName = "";
+        let currentDept = "";
+
+        // Pangkalan Data Berdaftar Tempatan (Local Storage)
+        let registeredStaffs = JSON.parse(localStorage.getItem('smart_attendance_staffs')) || [
+            { id: "STF-1088", name: "Ustaz Admin", dept: "Pengurusan & HR", pin: "1234", face: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop" }
+        ];
+
+        let capturedRegImageData = null;
+        let regStream = null;
+        let loginStream = null;
 
         function toggleOfflineMode() {
             isOnline = !isOnline;
@@ -523,7 +345,7 @@
             } else {
                 badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 cursor-pointer flex items-center space-x-1";
                 txt.innerText = "OFFLINE";
-                showToast("Mod Luar Talian (Offline) diaktifkan. Rekod disimpan secara lokal.");
+                showToast("Mod Luar Talian (Offline) diaktifkan.");
             }
         }
 
@@ -536,25 +358,100 @@
                 btn.className = "px-2.5 py-1 rounded-lg bg-amber-600 text-[10px] text-white border border-amber-500/50";
                 btn.innerText = "Mod Pejabat Normal";
                 lbl.innerText = "GPS: Tugas Luar Kawasan (Outstation / Tapak Rasmi)";
-                lbl.className = "flex items-center space-x-2 text-amber-300 font-medium";
                 note.classList.remove('hidden');
             } else {
                 btn.className = "px-2.5 py-1 rounded-lg bg-slate-900 text-[10px] text-purple-300 border border-purple-500/30 hover:bg-purple-950/50";
                 btn.innerText = "Tugas Luar Kawasan";
                 lbl.innerText = "GPS: Dalam Radius Pejabat (HQ - 150m)";
-                lbl.className = "flex items-center space-x-2 text-cyan-300 font-medium";
                 note.classList.add('hidden');
             }
         }
 
-        function triggerVoiceCheckIn(name, dept) {
-            document.getElementById('transcript-text').innerText = `"${name} (${dept}) dikesan melalui suara. Memulakan Imbasan Wajah AI..."`;
-            setTimeout(() => {
-                openFaceVerificationModal(name, dept);
-            }, 800);
+        function openRegisterModal() {
+            const modal = document.getElementById('register-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
         }
 
-        function openFaceVerificationModal(name, dept) {
+        function closeRegisterModal() {
+            const modal = document.getElementById('register-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            if(regStream) { regStream.getTracks().forEach(t => t.stop()); }
+        }
+
+        async function startRegCamera() {
+            try {
+                regStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                const video = document.getElementById('reg-video');
+                video.srcObject = regStream;
+                document.getElementById('reg-placeholder').classList.add('hidden');
+                
+                // Auto capture after 2 seconds or let user click
+                setTimeout(() => {
+                    const canvas = document.getElementById('reg-canvas');
+                    canvas.width = video.videoWidth || 300;
+                    canvas.height = video.videoHeight || 300;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    capturedRegImageData = canvas.toDataURL('image/png');
+                    
+                    const capImg = document.getElementById('reg-captured-img');
+                    capImg.src = capturedRegImageData;
+                    capImg.classList.remove('hidden');
+                    showToast("Muka berjaya dirakam untuk pendaftaran!");
+                    regStream.getTracks().forEach(t => t.stop());
+                }, 2000);
+            } catch (err) {
+                // Fallback simulation if webcam is blocked
+                capturedRegImageData = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop";
+                const capImg = document.getElementById('reg-captured-img');
+                capImg.src = capturedRegImageData;
+                capImg.classList.remove('hidden');
+                document.getElementById('reg-placeholder').classList.add('hidden');
+                showToast("Kamera simulasi diaktifkan.");
+            }
+        }
+
+        function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const id = document.getElementById('reg-id').value;
+            const dept = document.getElementById('reg-dept').value;
+            const pin = document.getElementById('reg-pin').value;
+
+            if(!capturedRegImageData) {
+                alert("Sila rakam muka anda terlebih dahulu melalui kamera.");
+                return;
+            }
+
+            // Simpan ke senarai
+            registeredStaffs.push({ id, name, dept, pin, face: capturedRegImageData });
+            localStorage.setItem('smart_attendance_staffs', JSON.stringify(registeredStaffs));
+
+            closeRegisterModal();
+            showToast("Akaun berjaya didaftarkan! Sila log masuk.");
+        }
+
+        function handleManualLogin(e) {
+            e.preventDefault();
+            const userInp = document.getElementById('username').value.trim();
+            const pinInp = document.getElementById('pin').value.trim();
+
+            // Semak sama ada akaun berdaftar wujud
+            const found = registeredStaffs.find(s => (s.id.toLowerCase() === userInp.toLowerCase() || s.name.toLowerCase().includes(userInp.toLowerCase())) && s.pin === pinInp);
+
+            if(!found) {
+                alert("Akaun tidak ditemui atau PIN salah! Sila pastikan anda sudah mendaftar akaun terlebih dahulu.");
+                return;
+            }
+
+            currentEmpName = found.name;
+            currentDept = found.dept;
+            openFaceVerificationModal(currentEmpName, currentDept);
+        }
+
+        async function openFaceVerificationModal(name, dept) {
             currentEmpName = name;
             currentDept = dept;
             blinkCount = 0;
@@ -564,12 +461,20 @@
             const modal = document.getElementById('face-modal');
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+            try {
+                loginStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                document.getElementById('login-video').srcObject = loginStream;
+            } catch (err) {
+                console.log("Webcam login fallback.");
+            }
         }
 
         function closeFaceModal() {
             const modal = document.getElementById('face-modal');
             modal.classList.add('opacity-0');
             setTimeout(() => modal.classList.add('hidden'), 300);
+            if(loginStream) { loginStream.getTracks().forEach(t => t.stop()); }
         }
 
         function simulateBlink() {
@@ -584,12 +489,6 @@
                     showSuccessModal(currentEmpName, currentDept);
                 }, 700);
             }
-        }
-
-        function handleManualLogin(e) {
-            e.preventDefault();
-            const user = document.getElementById('username').value;
-            openFaceVerificationModal(user, "Manual Check-In");
         }
 
         function showSuccessModal(name, dept) {
@@ -629,6 +528,18 @@
         }
 
         function openAdminDashboard() {
+            const tbody = document.getElementById('admin-registered-list');
+            if(registeredStaffs.length > 0) {
+                tbody.innerHTML = registeredStaffs.map(s => `
+                    <tr class="hover:bg-slate-900/40">
+                        <td class="p-3"><img src="${s.face}" class="w-8 h-8 rounded-full object-cover border border-purple-400"></td>
+                        <td class="p-3 font-semibold text-white">${s.name}</td>
+                        <td class="p-3 font-mono text-purple-300">${s.id}</td>
+                        <td class="p-3 text-slate-300">${s.dept}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">Wajah Sah</span></td>
+                    </tr>
+                `).join('');
+            }
             const modal = document.getElementById('admin-modal');
             modal.classList.remove('hidden');
             setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -640,20 +551,8 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        function openRegisterModal() {
-            alert("Buka borang pendaftaran akaun kakitangan baru / biometrik AI.");
-        }
-
         function openOutOfOfficeModal() {
             alert("Sila masukkan sebab tugasan luar rasmi dan lampirkan lokasi/nota.");
-        }
-
-        function triggerSupportCode() {
-            alert("Kod Sokongan Alternatif: #SKR-9920. Sila berikan kod ini kepada Pentadbir jika peranti menghadapi masalah.");
-        }
-
-        function exportAdminReport() {
-            alert("Laporan kehadiran berjaya dieksport ke format Excel (CSV / PDF).");
         }
 
         function togglePinVisibility() {
@@ -676,7 +575,7 @@
             setTimeout(() => div.remove(), 3500);
         }
 
-        // PWA Install prompt simulation
+        // PWA Install prompt
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -688,13 +587,10 @@
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('PWA installed');
-                    }
                     deferredPrompt = null;
                 });
             } else {
-                alert("Aplikasi PWA ini boleh dipasang terus melalui menu tetapan pelayar anda ('Add to Home Screen').");
+                alert("Aplikasi PWA ini boleh dipasang melalui menu pelayar ('Add to Home Screen').");
             }
         }
     </script>
